@@ -46,3 +46,6 @@ Ubuntu 22.04ではaptの検索で引っかかったのがclangで11以上だっ�
 
 たまたまmikanosのissueで[FreePoolがimplicit declaration errorになる](https://github.com/uchan-nos/mikanos/issues/15)というものがあった。
 本来は`FreePool()`ではなく`gBS->FreePool()`が正解。
+`#include`のなかでたまたま`FreePool()`が使えるようになってしまっているらしい。
+
+`FreePool()`と`gBS->FreePool()`で処理内容は変わらないため、動作には問題ない。
