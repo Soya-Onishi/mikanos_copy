@@ -10,6 +10,7 @@
 #include <Protocol/BlockIo.h>
 #include <Guid/FileInfo.h>
 #include "elf.hpp"
+#include <stdalign.h>
 
 struct MemoryMap {
   UINTN buffer_size;
@@ -80,7 +81,10 @@ EFI_STATUS EFIAPI UefiMain(
 
   // まずカーネルファイルの情報を取得する
   UINTN file_info_size = sizeof(EFI_FILE_INFO) + sizeof(CHAR16) * 12;
-  UINT8 file_info_buffer[file_info_size];
+  // alignasとalignofによってfile_info_bufferが
+  // EFI_FILE_INFO構造体のアラインメントと合わないことで発生する
+  // 問題を取り除くことができる
+  alignas(alignof(EFI_FILE_INFO)) UINT8 file_info_buffer[file_info_size];
   kernel_file->GetInfo(kernel_file, &gEfiFileInfoGuid, &file_info_size, file_info_buffer);
 
   // 得られた情報から、カーネルのファイルサイズを取得する
