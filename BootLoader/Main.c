@@ -50,7 +50,13 @@ EFI_STATUS EFIAPI UefiMain(
 
   // GOPを用いたピクセル単位の描画
   EFI_GRAPHICS_OUTPUT_PROTOCOL* gop;
-  OpenGOP(image_handle, &gop);
+  OpenGOP(image_handle, &gop);  
+  UINT8* frame_buffer = (UINT8*)gop->Mode->FrameBufferBase;
+  for(UINTN i = 0; i < gop->Mode->FrameBufferSize; i++) {
+    frame_buffer[i] = 255;
+  }
+
+  // GOPの情報を表示
   Print(
     L"Resolution: %ux%u, Pixel Format: %s, %u pixels/line\n", 
     gop->Mode->Info->HorizontalResolution,
@@ -64,11 +70,6 @@ EFI_STATUS EFIAPI UefiMain(
     gop->Mode->FrameBufferBase + gop->Mode->FrameBufferSize,
     gop->Mode->FrameBufferSize
   );
-
-  UINT8* frame_buffer = (UINT8*)gop->Mode->FrameBufferBase;
-  for(UINTN i = 0; i < gop->Mode->FrameBufferSize; i++) {
-    frame_buffer[i] = 255;
-  }
 
   // まずカーネルファイルの情報を取得する
   UINTN file_info_size = sizeof(EFI_FILE_INFO) + sizeof(CHAR16) * 12;
