@@ -242,7 +242,7 @@ EFI_STATUS OpenGOP(EFI_HANDLE image_handle, EFI_GRAPHICS_OUTPUT_PROTOCOL** gop) 
     EFI_OPEN_PROTOCOL_BY_HANDLE_PROTOCOL
   );
 
-  FreePool(gop_handles);
+  gBS->FreePool(gop_handles);
 
   return EFI_SUCCESS;
 }
