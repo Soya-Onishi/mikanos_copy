@@ -3,11 +3,13 @@
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/PrintLib.h>
 #include <Library/MemoryAllocationLib.h>
+#include <Library/BaseMemoryLib.h>
 #include <Protocol/LoadedImage.h>
 #include <Protocol/SimpleFileSystem.h>
 #include <Protocol/DiskIo2.h>
 #include <Protocol/BlockIo.h>
 #include <Guid/FileInfo.h>
+#include "elf.hpp"
 
 struct MemoryMap {
   UINTN buffer_size;
@@ -22,14 +24,19 @@ EFI_STATUS GetMemoryMap(struct MemoryMap* map);
 EFI_STATUS SaveMemoryMap(struct MemoryMap* map, EFI_FILE_PROTOCOL* file);
 EFI_STATUS OpenRootDir(EFI_HANDLE image_handle, EFI_FILE_PROTOCOL** root);
 EFI_STATUS OpenGOP(EFI_HANDLE image_handle, EFI_GRAPHICS_OUTPUT_PROTOCOL** gop);
+void CalcLoadAddressRange(Elf64_Ehdr* ehdr, UINT64* first, UINT64 *last);
+void CopyLoadSegment(Elf64_Ehdr* ehdr);
 const CHAR16* GetMemoryTypeUnicode(EFI_MEMORY_TYPE type);
 const CHAR16* GetPixelFormatUnicode(EFI_GRAPHICS_PIXEL_FORMAT fmt);
+void Halt(void);
 
 
 EFI_STATUS EFIAPI UefiMain(
   EFI_HANDLE image_handle,
   EFI_SYSTEM_TABLE *system_table
 ) {
+  EFI_STATUS status;
+
   Print(L"Hello, Mikan World!\n");
 
   CHAR8 memmap_buf[4096*4];
@@ -80,18 +87,41 @@ EFI_STATUS EFIAPI UefiMain(
   EFI_FILE_INFO* file_info = (EFI_FILE_INFO*)file_info_buffer;
   UINTN kernel_file_size = file_info->FileSize;
 
-  // カーネルをメモリにロードする
+  // 一時メモリにカーネルファイルを展開する
+  VOID* kernel_buffer;  
+  status = gBS->AllocatePool(EfiLoaderData, kernel_file_size, &kernel_buffer);
+  if(EFI_ERROR(status)) {
+    Print(L"failed to allocate pool: %r\n", status);
+    Halt();
+  }
+  status = kernel_file->Read(kernel_file, &kernel_file_size, kernel_buffer);
+  if(EFI_ERROR(status)) {
+    Print(L"failed to load kernel file: %r\n", status);
+    Halt();
+  }  
+
+  // カーネルを配置するための領域の計算と確保
+  Elf64_Ehdr* kernel_ehdr = (Elf64_Ehdr*)kernel_buffer;
+  UINT64 kernel_first_addr, kernel_last_addr;
+  CalcLoadAddressRange(kernel_ehdr, &kernel_first_addr, &kernel_last_addr);
+  UINTN num_pages = (kernel_last_addr - kernel_first_addr + 0xfff) / 0x1000;
   EFI_PHYSICAL_ADDRESS kernel_base_addr = 0x100000;
-  gBS->AllocatePages(AllocateAddress, EfiLoaderData, (kernel_file_size + 0xfff) / 0x1000, &kernel_base_addr);
-  kernel_file->Read(kernel_file, &kernel_file_size, (VOID*)kernel_base_addr);
-  UINT64 entry_addr = *(UINT64*)(kernel_base_addr + 24);
-  typedef void EntryPointType(UINT64, UINT64);
-  EntryPointType* entry_point = (EntryPointType*)entry_addr;
+  status = gBS->AllocatePages(AllocateAddress, EfiLoaderData, num_pages, &kernel_base_addr);
+  if(EFI_ERROR(status)) {
+    Print(L"failed to allocate kernel area: %r\n", status);
+    Halt();
+  }
+
+  // カーネルをメモリにロードする
+  CopyLoadSegment(kernel_ehdr);
+
+  // エントリポイントの設定
+  typedef void ENTRY_POINT(UINT64, UINT64);
+  ENTRY_POINT* entry_point = (ENTRY_POINT*)kernel_ehdr->e_entry;
 
   Print(L"Kernel: 0x%0lx (%lu bytes)\n", kernel_base_addr, kernel_file_size);
-  Print(L"EntryPoint: 0x%0lx\n", entry_addr);
-
-  EFI_STATUS status;
+  Print(L"EntryPoint: 0x%0lx\n", kernel_ehdr->e_entry);
+  
   status = gBS->ExitBootServices(image_handle, memmap.map_key);
   if(EFI_ERROR(status)) {
     status = GetMemoryMap(&memmap);
@@ -213,6 +243,38 @@ EFI_STATUS OpenGOP(EFI_HANDLE image_handle, EFI_GRAPHICS_OUTPUT_PROTOCOL** gop) 
   return EFI_SUCCESS;
 }
 
+void CalcLoadAddressRange(Elf64_Ehdr* ehdr, UINT64* first, UINT64* last) {
+  Elf64_Phdr* phdr = (Elf64_Phdr*)((UINT64)ehdr + ehdr->e_phoff);
+  *first = MAX_UINT64;
+  *last = 0;
+
+  for(Elf64_Half i= 0; i < ehdr->e_phnum; i++) {
+    if(phdr[i].p_type != PT_LOAD) {
+      continue;
+    }
+
+    *first = MIN(*first, phdr[i].p_vaddr);
+    *last = MAX(*last, phdr[i].p_vaddr + phdr[i].p_memsz);
+  }
+}
+
+void CopyLoadSegment(Elf64_Ehdr* ehdr) {
+  Elf64_Phdr* phdr = (Elf64_Phdr*)((UINT64)ehdr + ehdr->e_phoff);
+  
+  for(Elf64_Half i = 0; i < ehdr->e_phnum; i++) {
+    if(phdr[i].p_type != PT_LOAD) {
+      continue;
+    }
+
+    UINT64 segment_in_file = (UINT64)ehdr + phdr[i].p_offset;    
+    CopyMem((VOID*)phdr[i].p_vaddr, (VOID*)segment_in_file, phdr[i].p_filesz);
+
+    UINTN remain_bytes = phdr[i].p_memsz - phdr[i].p_filesz;
+    UINTN remain_offset = phdr[i].p_vaddr + phdr[i].p_filesz;
+    SetMem((VOID*)remain_offset, remain_bytes, 0);
+  }
+}
+
 const CHAR16* GetMemoryTypeUnicode(EFI_MEMORY_TYPE type) {
   switch(type) {
     case EfiReservedMemoryType: return L"EfiReservedMemoryType";
@@ -249,5 +311,11 @@ const CHAR16* GetPixelFormatUnicode(EFI_GRAPHICS_PIXEL_FORMAT fmt) {
       return L"PixelFormatMax";
     default:
       return L"InvalidPixelFormat";
+  }
+}
+
+void Halt(void) {
+  while(1) {
+    __asm__("hlt");
   }
 }
