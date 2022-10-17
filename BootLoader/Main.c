@@ -10,6 +10,7 @@
 #include <Protocol/BlockIo.h>
 #include <Guid/FileInfo.h>
 #include "elf.hpp"
+#include "../Kernel/frame_buffer_config.hpp"
 #include <stdalign.h>
 
 struct MemoryMap {
@@ -120,11 +121,31 @@ EFI_STATUS EFIAPI UefiMain(
   CopyLoadSegment(kernel_ehdr);
 
   // エントリポイントの設定
-  typedef void ENTRY_POINT(UINT64, UINT64);
+  typedef void ENTRY_POINT(struct FrameBufferConfig*);
   ENTRY_POINT* entry_point = (ENTRY_POINT*)kernel_ehdr->e_entry;
 
   Print(L"Kernel: 0x%0lx (%lu bytes)\n", kernel_base_addr, kernel_file_size);
   Print(L"EntryPoint: 0x%0lx\n", kernel_ehdr->e_entry);
+
+  struct FrameBufferConfig config = {
+    (UINT8*)gop->Mode->FrameBufferBase,
+    gop->Mode->Info->PixelsPerScanLine,
+    gop->Mode->Info->HorizontalResolution,
+    gop->Mode->Info->VerticalResolution,
+    0
+  };
+
+  switch (gop->Mode->Info->PixelFormat) {
+    case PixelRedGreenBlueReserved8BitPerColor:
+      config.pixel_format = kPixelRGBResv8BitPerColor;
+      break;
+    case PixelBlueGreenRedReserved8BitPerColor:
+      config.pixel_format = kPixelBGRResv8BitPerColor;
+      break;
+    default:
+      Print(L"Unimplemented pixel format: %d\n", gop->Mode->Info->PixelFormat);
+      Halt();
+  }
   
   status = gBS->ExitBootServices(image_handle, memmap.map_key);
   if(EFI_ERROR(status)) {
@@ -141,7 +162,7 @@ EFI_STATUS EFIAPI UefiMain(
     }
   }
 
-  entry_point(gop->Mode->FrameBufferBase, gop->Mode->FrameBufferSize);
+  entry_point(&config);
 
   Print(L"Exit from kernel (This is fatal)\n");
 
