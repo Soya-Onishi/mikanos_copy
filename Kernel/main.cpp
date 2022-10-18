@@ -7,35 +7,6 @@ struct PixelColor {
   uint8_t r, g, b;
 };
 
-int WritePixel(const FrameBufferConfig& config, int x, int y, const PixelColor& c);
-
-int WritePixel(
-  const FrameBufferConfig& config,
-  int x,
-  int y,
-  const PixelColor& c
-) {
-  const int pixel_position = config.pixels_per_scanline * y + x;
-  uint8_t* p = &config.frame_buffer[pixel_position * 4];
-
-  switch(config.pixel_format) {
-    case kPixelRGBResv8BitPerColor:      
-      p[0] = c.r;
-      p[1] = c.g;
-      p[2] = c.b;
-      break;
-    case kPixelBGRResv8BitPerColor:
-      p[0] = c.b;
-      p[1] = c.g;
-      p[2] = c.r;
-      break;
-    default:
-      return -1;
-  }
-
-  return 0;
-}
-
 class PixelWriter {
   public:
     PixelWriter(const FrameBufferConfig& config) : config_{config} {}
