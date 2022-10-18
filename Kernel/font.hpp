@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include "graphics.hpp"
 
 const uint8_t kFontA[16] = {
   0b00000000,
@@ -18,3 +19,5 @@ const uint8_t kFontA[16] = {
   0b01000010,
   0b11100111
 };
+
+void WriteAscii(PixelWriter& writer, int x, int y, char c, const PixelColor& color);
