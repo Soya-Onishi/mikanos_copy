@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <cstddef>
 #include "frame_buffer_config.hpp"
+#include "font.hpp"
 
 struct PixelColor {
   uint8_t r, g, b;
@@ -80,6 +81,22 @@ void* operator new(size_t size, void* buf) {
 
 void operator delete(void* obj) noexcept {}
 
+void WriteAscii(PixelWriter& writer, int x, int y, char c, const PixelColor& color);
+
+void WriteAscii(PixelWriter& writer, int x, int y, char c, const PixelColor& color) {
+  if(c != 'A') {
+    return;
+  }
+
+  for(int dy = 0; dy < 16; dy++) {
+    for(int dx = 0; dx < 8; dx++) {
+      if((kFontA[dy] << dx) & 0x80) {
+        writer.Write(x + dx, y + dy, color);
+      }
+    }
+  }
+}
+
 char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
 PixelWriter* pixel_writer;
 
@@ -114,6 +131,9 @@ extern "C" void kernel_main(
       pixel_writer->Write(x, y, { 0, 255, 0 });      
     }
   }
+
+  WriteAscii(*pixel_writer, 50, 50, 'A', {0, 0, 0});
+  WriteAscii(*pixel_writer, 58, 50, 'A', {0, 0, 0});
 
   halt();
 } 
