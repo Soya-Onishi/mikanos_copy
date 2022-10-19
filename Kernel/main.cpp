@@ -45,8 +45,13 @@ extern "C" void kernel_main(
     }
   }
 
-  WriteAscii(*pixel_writer, 50, 50, 'A', {0, 0, 0});
-  WriteAscii(*pixel_writer, 58, 50, 'A', {0, 0, 0});
-
+  const char* msg = "Hello World from mikanos Kernel";
+  int x = 50;
+  while(*msg) {
+    WriteAscii(*pixel_writer, x, 50, *msg, {0, 0, 0});
+    x += 8;
+    msg++;
+  }
+  
   halt();
 } 
