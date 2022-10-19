@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <cstddef>
+#include <cstdio>
 #include "frame_buffer_config.hpp"
 #include "graphics.hpp"
 #include "font.hpp"
@@ -45,13 +46,10 @@ extern "C" void kernel_main(
     }
   }
 
-  const char* msg = "Hello World from mikanos Kernel";
-  int x = 50;
-  while(*msg) {
-    WriteAscii(*pixel_writer, x, 50, *msg, {0, 0, 0});
-    x += 8;
-    msg++;
-  }
+  char buf[128];
+  sprintf(buf, "1 + 2 = %d", 1 + 2);
+  WriteString(*pixel_writer, 50, 50, "Hello World!", {0, 0, 255});
+  WriteString(*pixel_writer, 50, 66, buf, {0, 0, 0});
   
   halt();
 } 
