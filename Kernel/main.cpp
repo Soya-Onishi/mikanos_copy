@@ -4,6 +4,7 @@
 #include "frame_buffer_config.hpp"
 #include "graphics.hpp"
 #include "font.hpp"
+#include "console.hpp"
 
 void* operator new(size_t size, void* buf) {
   return buf;
@@ -12,6 +13,9 @@ void* operator new(size_t size, void* buf) {
 void operator delete(void* obj) noexcept {}
 
 char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
+char console_buf[sizeof(Console)];
+
+Console* console;
 PixelWriter* pixel_writer;
 
 void halt() {
@@ -46,10 +50,13 @@ extern "C" void kernel_main(
     }
   }
 
-  char buf[128];
-  sprintf(buf, "1 + 2 = %d", 1 + 2);
-  WriteString(*pixel_writer, 50, 50, "Hello World!", {0, 0, 255});
-  WriteString(*pixel_writer, 50, 66, buf, {0, 0, 0});
-  
+  console = new(console_buf) Console(*pixel_writer, {255, 255, 255}, {0, 0, 0});
+  console->Clear();
+  // 90文字の文字列
+  const char* numbers = "123456789112345678921234567893123456789412345678951234567896123456789712345678981234567899\n";
+  for(int row = 0; row < console->kRows + 1; row++) {
+    console->PutString(numbers);    
+  }
+    
   halt();
 } 
