@@ -24,6 +24,19 @@ void halt() {
   }
 }
 
+int printk(const char* fmt, ...) {
+  va_list ap;
+  int result;
+  char s[1024];
+
+  va_start(ap, fmt);
+  result = vsprintf(s, fmt, ap);
+  va_end(ap);
+
+  console->PutString(s);
+  return result;
+}
+
 extern "C" void kernel_main(
   const FrameBufferConfig& frame_buffer_config
 ) {  
@@ -56,6 +69,9 @@ extern "C" void kernel_main(
   const char* numbers = "123456789112345678921234567893123456789412345678951234567896123456789712345678981234567899\n";
   for(int row = 0; row < console->kRows + 1; row++) {
     console->PutString(numbers);    
+  }
+  for(int row = 0; row < 16; row++) {
+    printk("printk: %d\n", row);
   }
     
   halt();
