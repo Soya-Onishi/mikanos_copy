@@ -4,8 +4,10 @@
 
 #include <numeric>
 #include <vector>
+#include <array>
 
 #include "frame_buffer_config.hpp"
+#include "memory_map.hpp"
 #include "graphics.hpp"
 #include "font.hpp"
 #include "console.hpp"
@@ -104,8 +106,40 @@ void SwitchEhci2Xhci(const pci::Device& xhc_dev) {
       superspeed_ports, ehci2xhci_ports);
 }
 
+void show_memory_map(const MemoryMap& memmap) {
+  const std::array<MemoryType, 3> available_memory_types {
+    MemoryType::kEfiBootServicesCode,
+    MemoryType::kEfiBootServicesData,
+    MemoryType::kEfiConventionalMemory,
+  };
+
+  printk("start memory map iteration: %d\n", memmap.map_size);    
+
+  for(
+    uintptr_t iter = reinterpret_cast<uintptr_t>(memmap.buffer);
+    iter < reinterpret_cast<uintptr_t>(memmap.buffer) + memmap.map_size;
+    iter += memmap.descriptor_size
+  ) {        
+    auto desc = reinterpret_cast<MemoryDescriptor*>(iter);
+    for(int i = 0; i < available_memory_types.size(); i++) {
+      if(desc->type == available_memory_types[i]) {
+        printk(
+          "type = %u, phys = %08lx - %08lx, pages = %lu, attr = %08lx\n",
+          desc->type,
+          desc->physical_start,
+          desc->physical_start + desc->number_of_pages * 4096 - 1,
+          desc->number_of_pages,
+          desc->attribute
+        );
+        break;
+      }
+    }
+  }
+}
+
 extern "C" void kernel_main(
-  const FrameBufferConfig& frame_buffer_config
+  const FrameBufferConfig& frame_buffer_config,
+  const MemoryMap& memmap
 ) {  
   __asm__("cli");
 
@@ -125,7 +159,9 @@ extern "C" void kernel_main(
   message_queue = new(message_queue_buf) ArrayQueue<Message>(queue_buffer);
 
   console = new(console_buf) Console(*pixel_writer, kDesktopFGColor, kDesktopBGColor);  
-  console->Clear();    
+  console->Clear();
+
+  show_memory_map(memmap);
 
   mouse_cursor = new(mouse_cursor_buf) MouseCursor {
     pixel_writer, kDesktopBGColor, {300, 200}

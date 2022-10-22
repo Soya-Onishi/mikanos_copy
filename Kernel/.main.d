@@ -38,11 +38,11 @@ main.o: main.cpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/climits \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/limits.h \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__split_buffer \
-  frame_buffer_config.hpp graphics.hpp font.hpp console.hpp pci.hpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/array \
-  error.hpp mouse.hpp logger.hpp interrupt.hpp asmfunc.h queue.hpp \
-  usb/memory.hpp usb/device.hpp usb/setupdata.hpp usb/endpoint.hpp \
-  usb/arraymap.hpp \
+  frame_buffer_config.hpp memory_map.hpp graphics.hpp font.hpp \
+  console.hpp pci.hpp error.hpp mouse.hpp logger.hpp interrupt.hpp \
+  asmfunc.h queue.hpp usb/memory.hpp usb/device.hpp usb/setupdata.hpp \
+  usb/endpoint.hpp usb/arraymap.hpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/optional \
   usb/classdriver/mouse.hpp usb/classdriver/hid.hpp \
   usb/classdriver/base.hpp usb/xhci/xhci.hpp usb/xhci/registers.hpp \

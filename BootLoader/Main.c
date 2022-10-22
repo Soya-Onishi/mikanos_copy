@@ -11,16 +11,8 @@
 #include <Guid/FileInfo.h>
 #include "elf.hpp"
 #include "../Kernel/frame_buffer_config.hpp"
+#include "../Kernel/memory_map.hpp"
 #include <stdalign.h>
-
-struct MemoryMap {
-  UINTN buffer_size;
-  VOID* buffer;
-  UINTN map_size;
-  UINTN map_key;
-  UINTN descriptor_size;
-  UINT32 descriptor_version;
-};
 
 EFI_STATUS GetMemoryMap(struct MemoryMap* map);
 EFI_STATUS SaveMemoryMap(struct MemoryMap* map, EFI_FILE_PROTOCOL* file);
@@ -42,7 +34,7 @@ EFI_STATUS EFIAPI UefiMain(
   Print(L"Hello, Mikan World!\n");
 
   CHAR8 memmap_buf[4096*4];
-  struct MemoryMap memmap = { sizeof(memmap_buf), memmap_buf, 0, 0, 0, 0 };
+  struct MemoryMap memmap = { sizeof(memmap_buf), memmap_buf, 0, 0, 0, 0 };  
   GetMemoryMap(&memmap);
 
   EFI_FILE_PROTOCOL* root_dir;
@@ -121,7 +113,7 @@ EFI_STATUS EFIAPI UefiMain(
   CopyLoadSegment(kernel_ehdr);
 
   // エントリポイントの設定
-  typedef void ENTRY_POINT(struct FrameBufferConfig*);
+  typedef void ENTRY_POINT(const struct FrameBufferConfig*, const struct MemoryMap*);
   ENTRY_POINT* entry_point = (ENTRY_POINT*)kernel_ehdr->e_entry;
 
   Print(L"Kernel: 0x%0lx (%lu bytes)\n", kernel_base_addr, kernel_file_size);
@@ -162,7 +154,7 @@ EFI_STATUS EFIAPI UefiMain(
     }
   }
 
-  entry_point(&config);
+  entry_point(&config, &memmap);
 
   Print(L"Exit from kernel (This is fatal)\n");
 
