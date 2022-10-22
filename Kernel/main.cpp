@@ -53,7 +53,6 @@ inline void halt() {
 
 __attribute__((interrupt))
 void IntHandlerXHCI(InterruptFrame* frame) {
-  Log(kInfo, "Interrupt Handler is called\n");
   while(xhc->PrimaryEventRing()->HasFront()) {
     if(auto err = ProcessEvent(*xhc)) {
       Log(kError, "Error while ProcessEvent: %s at %s:%d\n", err.Name(), err.File(), err.Line());
@@ -96,102 +95,6 @@ void SwitchEhci2Xhci(const pci::Device& xhc_dev) {
       superspeed_ports, ehci2xhci_ports);
 }
 
-pci::Device* FindXHCDevice() {
-  pci::Device* xhc_dev = nullptr;
-  for (int i = 0; i < pci::num_device; ++i) {
-    if (pci::devices[i].class_code.Match(0x0cu, 0x03u, 0x30u)) {
-      xhc_dev = &pci::devices[i];
-
-      if (0x8086 == pci::ReadVendorId(*xhc_dev)) {
-        break;
-      }
-    }
-  }
-
-  if (xhc_dev) {
-    Log(kInfo, "xHC has been found: %d.%d.%d\n",
-        xhc_dev->bus, xhc_dev->device, xhc_dev->function);
-  }
-
-  return xhc_dev;
-}
-
-void EnableMSI() {
-  const uint8_t bsp_local_apic_id = *reinterpret_cast<const uint32_t*>(0xfee00020) >> 24;
-  pci::ConfigureMSIFixedDestination(
-    *FindXHCDevice(),
-    bsp_local_apic_id,
-    pci::MSITriggerMode::kLevel,
-    pci::MSIDeliveryMode::kFixed,
-    InterruptVector::kXHCI,
-    0
-  );
-}
-
-void InitializePCIBus() {
-  mouse_cursor = new(mouse_cursor_buf) MouseCursor{
-    pixel_writer, kDesktopBGColor, {300, 200}
-  };
-
-  Log(kInfo, "Start PCI Bus Initialization");
-  auto err = pci::ScanAllBus();
-  Log(kDebug, "ScanAllBus: %s\n", err.Name());
-
-  for (int i = 0; i < pci::num_device; ++i) {
-    const auto& dev = pci::devices[i];
-    auto vendor_id = pci::ReadVendorId(dev);
-    auto class_code = pci::ReadClassCode(dev.bus, dev.device, dev.function);
-    Log(kDebug, "%d.%d.%d: vend %04x, class %08x, head %02x\n",
-        dev.bus, dev.device, dev.function,
-        vendor_id, class_code, dev.header_type);
-  }
-
-  pci::Device* xhc_dev = FindXHCDevice();  
-
-  const uint16_t cs = GetCS();
-  const uint64_t offset = reinterpret_cast<uint64_t>(IntHandlerXHCI);
-  SetIDTEntry(idt[InterruptVector::kXHCI], MakeIDTAttr(DescriptorType::kInterruptGate), offset, cs);
-  LoadIDT(sizeof(idt) - 1, reinterpret_cast<uint64_t>(&idt[0]));
-  EnableMSI();
-
-  const WithError<uint64_t> xhc_bar = pci::ReadBar(*xhc_dev, 0);
-  Log(kDebug, "ReadBar: %s\n", xhc_bar.error.Name());
-  const uint64_t xhc_mmio_base = xhc_bar.value & ~static_cast<uint64_t>(0xf);
-  Log(kDebug, "xHC mmio_base = %08lx\n", xhc_mmio_base);
-
-  usb::xhci::Controller xhc{xhc_mmio_base};
-
-  if (0x8086 == pci::ReadVendorId(*xhc_dev)) {
-    SwitchEhci2Xhci(*xhc_dev);
-  }
-  {
-    auto err = xhc.Initialize();
-    Log(kDebug, "xhc.Initialize: %s\n", err.Name());
-  }
-
-  Log(kInfo, "xHC starting\n");
-  xhc.Run();
-
-  ::xhc = &xhc;
-  __asm__("sti");
-
-  usb::HIDMouseDriver::default_observer = MouseObserver;
-
-  for (int i = 1; i <= xhc.MaxPorts(); ++i) {
-    auto port = xhc.PortAt(i);
-    Log(kDebug, "Port %d: IsConnected=%d\n", i, port.IsConnected());
-
-    if (port.IsConnected()) {
-      if (auto err = ConfigurePort(xhc, port)) {
-        Log(kError, "failed to configure port: %s at %s:%d\n",
-            err.Name(), err.File(), err.Line());
-        continue;
-      }
-    }
-  }
-}
-
-
 extern "C" void kernel_main(
   const FrameBufferConfig& frame_buffer_config
 ) {  
@@ -210,7 +113,7 @@ extern "C" void kernel_main(
 
   console = new(console_buf) Console(*pixel_writer, kDesktopFGColor, kDesktopBGColor);  
   console->Clear();    
-  
+
   mouse_cursor = new(mouse_cursor_buf) MouseCursor {
     pixel_writer, kDesktopBGColor, {300, 200}
   };
@@ -245,24 +148,26 @@ extern "C" void kernel_main(
   }
 
   const uint16_t cs = GetCS();
+  // const uint64_t offset = reinterpret_cast<uint64_t>(IntHandlerXHCI);
   SetIDTEntry(
     idt[InterruptVector::kXHCI], 
     MakeIDTAttr(DescriptorType::kInterruptGate), 
-    reinterpret_cast<uint64_t>(IntHandlerXHCI), 
+    reinterpret_cast<uint64_t>(IntHandlerXHCI),
     cs
   );
   LoadIDT(sizeof(idt) - 1, reinterpret_cast<uint64_t>(&idt[0]));
-
+ 
   const uint8_t bsp_local_apic_id = *reinterpret_cast<const uint32_t*>(0xfee00020) >> 24;
   pci::ConfigureMSIFixedDestination(
-    *xhc_dev, 
+    *xhc_dev,
     bsp_local_apic_id,
     pci::MSITriggerMode::kLevel,
     pci::MSIDeliveryMode::kFixed,
     InterruptVector::kXHCI,
     0
   );
-
+  
+  
   const WithError<uint64_t> xhc_bar = pci::ReadBar(*xhc_dev, 0);
   const uint64_t xhc_mmio_base = xhc_bar.value & ~static_cast<uint64_t>(0xf);
 
@@ -290,7 +195,7 @@ extern "C" void kernel_main(
       }
     }
   }
-
+  
   halt();
 } 
 
