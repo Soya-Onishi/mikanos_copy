@@ -14,6 +14,7 @@
 #include "logger.hpp"
 #include "interrupt.hpp"
 #include "asmfunc.h"
+#include "queue.hpp"
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
 #include "usb/classdriver/mouse.hpp"
@@ -29,17 +30,26 @@ void* operator new(size_t size, void* buf) {
 void operator delete(void* obj) noexcept {}
 */
 
+struct Message {
+  enum Type {
+    kInterruptXHCI,
+  } type;
+};
+
 const PixelColor kDesktopBGColor{45, 118, 237};
 const PixelColor kDesktopFGColor{255, 255, 255};
 
 char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
 char console_buf[sizeof(Console)];
 char mouse_cursor_buf[sizeof(MouseCursor)];
+char message_queue_buf[sizeof(ArrayQueue<Message>)];
 
 Console* console;
 PixelWriter* pixel_writer;
 MouseCursor* mouse_cursor;
 usb::xhci::Controller* xhc;
+ArrayQueue<Message>* message_queue;
+std::array<Message, 32> queue_buffer;
 
 void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
   mouse_cursor->MoveRelative({displacement_x, displacement_y});
@@ -53,11 +63,10 @@ inline void halt() {
 
 __attribute__((interrupt))
 void IntHandlerXHCI(InterruptFrame* frame) {
-  while(xhc->PrimaryEventRing()->HasFront()) {
-    if(auto err = ProcessEvent(*xhc)) {
-      Log(kError, "Error while ProcessEvent: %s at %s:%d\n", err.Name(), err.File(), err.Line());
-    }
-  }
+  Error err = message_queue->Push(Message{Message::kInterruptXHCI});
+  if(err.Cause() != Error::kSuccess) {
+    Log(kError, "Interrupt message queue is full");
+  }  
   NotifyEndOfInterrupt();
 }
 
@@ -98,6 +107,8 @@ void SwitchEhci2Xhci(const pci::Device& xhc_dev) {
 extern "C" void kernel_main(
   const FrameBufferConfig& frame_buffer_config
 ) {  
+  __asm__("cli");
+
   switch(frame_buffer_config.pixel_format) {
     case kPixelRGBResv8BitPerColor:
       pixel_writer = new(pixel_writer_buf) RGBResv8BitPerColorPixelWriter(frame_buffer_config);
@@ -110,6 +121,8 @@ extern "C" void kernel_main(
   }
 
   SetLogLevel(kInfo);
+
+  message_queue = new(message_queue_buf) ArrayQueue<Message>(queue_buffer);
 
   console = new(console_buf) Console(*pixel_writer, kDesktopFGColor, kDesktopBGColor);  
   console->Clear();    
@@ -196,6 +209,32 @@ extern "C" void kernel_main(
     }
   }
   
+  while(true) {
+    __asm__("cli");
+    if(message_queue->Count() == 0) {
+      __asm__("sti");
+      __asm__("hlt");
+      continue;
+    }
+    
+    Message msg = message_queue->Front();
+    message_queue->Pop();    
+
+    __asm__("sti");
+    switch(msg.type) {
+      case Message::kInterruptXHCI:
+        while(xhc.PrimaryEventRing()->HasFront()) {
+          if(auto err = ProcessEvent(xhc)) {
+            Log(kError, "Error while Process Event: %s at %s:%d\n", err.Name(), err.File(), err.Line());
+          }
+        }
+        break;
+      default:
+        Log(kError, "Unknown message type: %d\n", msg.type);
+        break;
+    }
+  }
+
   halt();
 } 
 
