@@ -31,7 +31,10 @@ usb/device.o: usb/device.cpp usb/device.hpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/_ansi.h \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/functional \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/bit \
-  error.hpp usb/setupdata.hpp usb/endpoint.hpp usb/arraymap.hpp \
+  error.hpp \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/cstdio \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/stdio.h \
+  usb/setupdata.hpp usb/endpoint.hpp usb/arraymap.hpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/optional \
   usb/descriptor.hpp usb/classdriver/base.hpp \
   usb/classdriver/keyboard.hpp usb/classdriver/hid.hpp \

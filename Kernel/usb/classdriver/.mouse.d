@@ -29,6 +29,8 @@ usb/classdriver/mouse.o: usb/classdriver/mouse.cpp usb/classdriver/mouse.hpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/assert.h \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/_ansi.h \
   usb/classdriver/hid.hpp usb/classdriver/base.hpp error.hpp \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/cstdio \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/stdio.h \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/array \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/algorithm \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/bit \

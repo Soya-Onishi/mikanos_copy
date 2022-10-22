@@ -1,4 +1,4 @@
-usb/xhci/trb.o: usb/xhci/trb.cpp usb/xhci/trb.hpp \
+interrupt.o: interrupt.cpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/cstdint \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__config \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/stdint.h \
@@ -31,6 +31,4 @@ usb/xhci/trb.o: usb/xhci/trb.cpp usb/xhci/trb.hpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/_ansi.h \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/functional \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/bit \
-  usb/xhci/context.hpp usb/endpoint.hpp error.hpp \
-  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/cstdio \
-  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/stdio.h
+  interrupt.hpp logger.hpp

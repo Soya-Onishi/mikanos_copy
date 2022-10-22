@@ -36,6 +36,8 @@ usb/xhci/ring.o: usb/xhci/ring.cpp usb/xhci/ring.hpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/limits.h \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__split_buffer \
   error.hpp \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/cstdio \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/stdio.h \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/array \
   usb/memory.hpp usb/xhci/registers.hpp register.hpp usb/xhci/trb.hpp \
   usb/xhci/context.hpp usb/endpoint.hpp

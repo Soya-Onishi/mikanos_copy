@@ -12,6 +12,8 @@
 #include "pci.hpp"
 #include "mouse.hpp"
 #include "logger.hpp"
+#include "interrupt.hpp"
+#include "asmfunc.h"
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
 #include "usb/classdriver/mouse.hpp"
@@ -37,6 +39,7 @@ char mouse_cursor_buf[sizeof(MouseCursor)];
 Console* console;
 PixelWriter* pixel_writer;
 MouseCursor* mouse_cursor;
+usb::xhci::Controller* xhc;
 
 void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
   mouse_cursor->MoveRelative({displacement_x, displacement_y});
@@ -46,6 +49,17 @@ void halt() {
   while(1) {
     __asm__("hlt");
   }
+}
+
+__attribute__((interrupt))
+void IntHandlerXHCI(InterruptFrame* frame) {
+  Log(kInfo, "Interrupt Handler is called\n");
+  while(xhc->PrimaryEventRing()->HasFront()) {
+    if(auto err = ProcessEvent(*xhc)) {
+      Log(kError, "Error while ProcessEvent: %s at %s:%d\n", err.Name(), err.File(), err.Line());
+    }
+  }
+  NotifyEndOfInterrupt();
 }
 
 int printk(const char* fmt, ...) {
@@ -82,59 +96,7 @@ void SwitchEhci2Xhci(const pci::Device& xhc_dev) {
       superspeed_ports, ehci2xhci_ports);
 }
 
-extern "C" void kernel_main(
-  const FrameBufferConfig& frame_buffer_config
-) {  
-  switch(frame_buffer_config.pixel_format) {
-    case kPixelRGBResv8BitPerColor:
-      pixel_writer = new(pixel_writer_buf) RGBResv8BitPerColorPixelWriter(frame_buffer_config);
-      break;
-    case kPixelBGRResv8BitPerColor:
-      pixel_writer = new(pixel_writer_buf) BGRResv8BitPerColorPixelWriter(frame_buffer_config);
-      break;
-    default:
-      halt();   
-  }
-  // キャッシュの関係でxよりyをループの外側にしたほうがいいと考えた。
-  for(int y = 0; y < frame_buffer_config.vertical_resolution; y++) {
-    for(int x = 0; x < frame_buffer_config.horizontal_resolution; x++) {
-      pixel_writer->Write(x, y, { 255, 255, 255 });      
-    }
-  }
-
-  for(int y = 0; y < 100; y++) {
-    for(int x = 0; x < 200; x++) {
-      pixel_writer->Write(x, y, { 0, 255, 0 });      
-    }
-  }
-
-  console = new(console_buf) Console(*pixel_writer, {255, 255, 255}, {0, 0, 0});
-  console->Clear();
-  // 90文字の文字列
-  const char* numbers = "123456789112345678921234567893123456789412345678951234567896123456789712345678981234567899\n";
-  for(int row = 0; row < console->kRows + 1; row++) {
-    console->PutString(numbers);    
-  }
-  for(int row = 0; row < 16; row++) {
-    printk("printk: %d\n", row);
-  }
-
-  mouse_cursor = new(mouse_cursor_buf) MouseCursor{
-    pixel_writer, kDesktopBGColor, {300, 200}
-  };
-
-  auto err = pci::ScanAllBus();
-  Log(kDebug, "ScanAllBus: %s\n", err.Name());
-
-  for (int i = 0; i < pci::num_device; ++i) {
-    const auto& dev = pci::devices[i];
-    auto vendor_id = pci::ReadVendorId(dev);
-    auto class_code = pci::ReadClassCode(dev.bus, dev.device, dev.function);
-    Log(kDebug, "%d.%d.%d: vend %04x, class %08x, head %02x\n",
-        dev.bus, dev.device, dev.function,
-        vendor_id, class_code, dev.header_type);
-  }
-
+pci::Device* FindXHCDevice() {
   pci::Device* xhc_dev = nullptr;
   for (int i = 0; i < pci::num_device; ++i) {
     if (pci::devices[i].class_code.Match(0x0cu, 0x03u, 0x30u)) {
@@ -150,6 +112,47 @@ extern "C" void kernel_main(
     Log(kInfo, "xHC has been found: %d.%d.%d\n",
         xhc_dev->bus, xhc_dev->device, xhc_dev->function);
   }
+
+  return xhc_dev;
+}
+
+void EnableMSI() {
+  const uint8_t bsp_local_apic_id = *reinterpret_cast<const uint32_t*>(0xfee00020) >> 24;
+  pci::ConfigureMSIFixedDestination(
+    *FindXHCDevice(),
+    bsp_local_apic_id,
+    pci::MSITriggerMode::kLevel,
+    pci::MSIDeliveryMode::kFixed,
+    InterruptVector::kXHCI,
+    0
+  );
+}
+
+void InitializePCIBus() {
+  mouse_cursor = new(mouse_cursor_buf) MouseCursor{
+    pixel_writer, kDesktopBGColor, {300, 200}
+  };
+
+  Log(kInfo, "Start PCI Bus Initialization");
+  auto err = pci::ScanAllBus();
+  Log(kDebug, "ScanAllBus: %s\n", err.Name());
+
+  for (int i = 0; i < pci::num_device; ++i) {
+    const auto& dev = pci::devices[i];
+    auto vendor_id = pci::ReadVendorId(dev);
+    auto class_code = pci::ReadClassCode(dev.bus, dev.device, dev.function);
+    Log(kDebug, "%d.%d.%d: vend %04x, class %08x, head %02x\n",
+        dev.bus, dev.device, dev.function,
+        vendor_id, class_code, dev.header_type);
+  }
+
+  pci::Device* xhc_dev = FindXHCDevice();  
+
+  const uint16_t cs = GetCS();
+  const uint64_t offset = reinterpret_cast<uint64_t>(IntHandlerXHCI);
+  SetIDTEntry(idt[InterruptVector::kXHCI], MakeIDTAttr(DescriptorType::kInterruptGate), offset, cs);
+  LoadIDT(sizeof(idt) - 1, reinterpret_cast<uint64_t>(&idt[0]));
+  EnableMSI();
 
   const WithError<uint64_t> xhc_bar = pci::ReadBar(*xhc_dev, 0);
   Log(kDebug, "ReadBar: %s\n", xhc_bar.error.Name());
@@ -169,6 +172,9 @@ extern "C" void kernel_main(
   Log(kInfo, "xHC starting\n");
   xhc.Run();
 
+  ::xhc = &xhc;
+  __asm__("sti");
+
   usb::HIDMouseDriver::default_observer = MouseObserver;
 
   for (int i = 1; i <= xhc.MaxPorts(); ++i) {
@@ -183,14 +189,29 @@ extern "C" void kernel_main(
       }
     }
   }
+}
 
-  while (1) {
-    if (auto err = ProcessEvent(xhc)) {
-      Log(kError, "Error while ProcessEvent: %s at %s:%d\n",
-          err.Name(), err.File(), err.Line());
-    }
+
+extern "C" void kernel_main(
+  const FrameBufferConfig& frame_buffer_config
+) {  
+  switch(frame_buffer_config.pixel_format) {
+    case kPixelRGBResv8BitPerColor:
+      pixel_writer = new(pixel_writer_buf) RGBResv8BitPerColorPixelWriter(frame_buffer_config);
+      break;
+    case kPixelBGRResv8BitPerColor:
+      pixel_writer = new(pixel_writer_buf) BGRResv8BitPerColorPixelWriter(frame_buffer_config);
+      break;
+    default:
+      halt();   
   }
 
+  SetLogLevel(kInfo);
+
+  console = new(console_buf) Console(*pixel_writer, kDesktopFGColor, kDesktopBGColor);  
+  console->Clear();    
+  
+  InitializePCIBus();  
 
   halt();
 } 
