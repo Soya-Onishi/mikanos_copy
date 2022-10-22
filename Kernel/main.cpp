@@ -45,7 +45,7 @@ void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
   mouse_cursor->MoveRelative({displacement_x, displacement_y});
 }
 
-void halt() {
+inline void halt() {
   while(1) {
     __asm__("hlt");
   }
@@ -211,7 +211,85 @@ extern "C" void kernel_main(
   console = new(console_buf) Console(*pixel_writer, kDesktopFGColor, kDesktopBGColor);  
   console->Clear();    
   
-  InitializePCIBus();  
+  mouse_cursor = new(mouse_cursor_buf) MouseCursor {
+    pixel_writer, kDesktopBGColor, {300, 200}
+  };
+
+  auto err = pci::ScanAllBus();
+  Log(kDebug, "ScanAllBus: %s\n", err.Name());
+
+  for(int i = 0; i < pci::num_device; i++) {
+    const auto& dev = pci::devices[i];
+    auto vendor_id = pci::ReadVendorId(dev);
+    auto class_code = pci::ReadClassCode(dev.bus, dev.device, dev.function);
+
+    Log(kDebug, "%d.%d.%d: vend %04x, class %08x, head %02x\n",
+      dev.bus, dev.device, dev.function,
+      vendor_id, class_code, dev.header_type);
+  }
+
+  pci::Device* xhc_dev = nullptr;
+  for(int i = 0; i < pci::num_device; i++) {
+    if(pci::devices[i].class_code.Match(0x0Cu, 0x03u, 0x30u)) {
+      xhc_dev = &pci::devices[i];
+
+      if(0x8086 == pci::ReadVendorId(*xhc_dev)) {
+        break;
+      }
+    }
+  }
+
+  if(!xhc_dev) {
+    Log(kWarn, "xHC device is not found");
+    halt();
+  }
+
+  const uint16_t cs = GetCS();
+  SetIDTEntry(
+    idt[InterruptVector::kXHCI], 
+    MakeIDTAttr(DescriptorType::kInterruptGate), 
+    reinterpret_cast<uint64_t>(IntHandlerXHCI), 
+    cs
+  );
+  LoadIDT(sizeof(idt) - 1, reinterpret_cast<uint64_t>(&idt[0]));
+
+  const uint8_t bsp_local_apic_id = *reinterpret_cast<const uint32_t*>(0xfee00020) >> 24;
+  pci::ConfigureMSIFixedDestination(
+    *xhc_dev, 
+    bsp_local_apic_id,
+    pci::MSITriggerMode::kLevel,
+    pci::MSIDeliveryMode::kFixed,
+    InterruptVector::kXHCI,
+    0
+  );
+
+  const WithError<uint64_t> xhc_bar = pci::ReadBar(*xhc_dev, 0);
+  const uint64_t xhc_mmio_base = xhc_bar.value & ~static_cast<uint64_t>(0xf);
+
+  usb::xhci::Controller xhc{xhc_mmio_base};
+
+  if(0x8086 == pci::ReadVendorId(*xhc_dev)) {
+    SwitchEhci2Xhci(*xhc_dev);
+  } else {
+    auto err = xhc.Initialize();
+  }
+
+  xhc.Run();
+
+  ::xhc = &xhc;
+  __asm__("sti");
+
+  usb::HIDMouseDriver::default_observer = MouseObserver;
+
+  for(int i = 1; i <= xhc.MaxPorts(); i++) {
+    auto port = xhc.PortAt(i);
+
+    if(port.IsConnected()) {
+      if(auto err = ConfigurePort(xhc, port)) {
+        continue;
+      }
+    }
+  }
 
   halt();
 } 

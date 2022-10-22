@@ -7,10 +7,10 @@ Console::Console(PixelWriter& writer, const PixelColor& fg_color, const PixelCol
     
   }
 
-// 画面のコンソール範囲を初期化する。
+// 画面を初期化する。
 void Console::Clear() {
-  for(int y = 0; y < 16 * kRows; y++) {
-    for(int x = 0; x < 8 * kColumns; x++) {
+  for(int y = 0; y < writer_.GetResolution().y; y++) {
+    for(int x = 0; x < writer_.GetResolution().x; x++) {
       writer_.Write(x, y, bg_color_);
     }    
   }
