@@ -17,6 +17,7 @@
 #include "interrupt.hpp"
 #include "asmfunc.h"
 #include "queue.hpp"
+#include "segment.hpp"
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
 #include "usb/classdriver/mouse.hpp"
@@ -52,6 +53,8 @@ MouseCursor* mouse_cursor;
 usb::xhci::Controller* xhc;
 ArrayQueue<Message>* message_queue;
 std::array<Message, 32> queue_buffer;
+
+alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 
 void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
   mouse_cursor->MoveRelative({displacement_x, displacement_y});
@@ -137,11 +140,21 @@ void show_memory_map(const MemoryMap& memmap) {
   }
 }
 
-extern "C" void kernel_main(
-  const FrameBufferConfig& frame_buffer_config,
-  const MemoryMap& memmap
-) {  
-  __asm__("cli");
+extern "C" void kernel_main_new_stack(
+  const FrameBufferConfig& frame_buffer_config_ref,
+  const MemoryMap& memmap_ref
+) {
+    __asm__("cli");
+
+  FrameBufferConfig frame_buffer_config(frame_buffer_config_ref);
+  MemoryMap memmap(memmap_ref);    
+
+  setup_segments();
+
+  const uint16_t kernel_cs = 1 << 3;
+  const uint64_t kernel_ss = 2 << 3;
+  SetDSAll(0);
+  SetCSSS(kernel_cs, kernel_ss);
 
   switch(frame_buffer_config.pixel_format) {
     case kPixelRGBResv8BitPerColor:

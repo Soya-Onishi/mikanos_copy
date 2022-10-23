@@ -48,4 +48,12 @@ inline bool operator==(MemoryType lhs, uint32_t rhs) {
   return rhs == lhs;
 }
 
+inline bool IsAvailable(MemoryType type) {
+  return (
+    type == MemoryType::kEfiBootServicesCode ||
+    type == MemoryType::kEfiBootServicesData ||
+    type == MemoryType::kEfiConventionalMemory
+  );
+}
+
 #endif
