@@ -18,6 +18,8 @@
 #include "asmfunc.h"
 #include "queue.hpp"
 #include "segment.hpp"
+#include "paging.hpp"
+#include "memory_manager.hpp"
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
 #include "usb/classdriver/mouse.hpp"
@@ -46,6 +48,7 @@ char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
 char console_buf[sizeof(Console)];
 char mouse_cursor_buf[sizeof(MouseCursor)];
 char message_queue_buf[sizeof(ArrayQueue<Message>)];
+char memory_manager_buf[sizeof(BitmapMemoryManager)];
 
 Console* console;
 PixelWriter* pixel_writer;
@@ -53,6 +56,7 @@ MouseCursor* mouse_cursor;
 usb::xhci::Controller* xhc;
 ArrayQueue<Message>* message_queue;
 std::array<Message, 32> queue_buffer;
+BitmapMemoryManager* memory_manager;
 
 alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 
@@ -155,6 +159,43 @@ extern "C" void kernel_main_new_stack(
   const uint64_t kernel_ss = 2 << 3;
   SetDSAll(0);
   SetCSSS(kernel_cs, kernel_ss);
+
+  setup_identity_pagetable();
+
+  ::memory_manager = new(memory_manager_buf) BitmapMemoryManager;
+  const auto memory_map_base = reinterpret_cast<uintptr_t>(memmap.buffer);
+  uintptr_t available_end = 0;
+  for(
+    uintptr_t iter = memory_map_base;
+    iter < memory_map_base + memmap.map_size;
+    iter += memmap.descriptor_size
+  ) {
+    auto desc = reinterpret_cast<const MemoryDescriptor*>(iter);
+    if(available_end < desc->physical_start) {
+      memory_manager->MarkAllocated(
+        FrameID{ available_end / kBytesPerFrame },
+        (desc->physical_start - available_end) / kBytesPerFrame
+      );
+    }
+
+    const auto physical_end = desc->physical_start + desc->number_of_pages * kUEFIPageSize;
+
+    // TODO: 要検証
+    // IsAvailableがTrueでavailable_endを更新しているが、
+    // Falseでもavailable_endを更新してもいいのでは？
+    // Falseのときは更新していないが、
+    // この場合次のループのときに同じ場所をMarkAllocatedすることにならないか
+    if(IsAvailable(static_cast<MemoryType>(desc->type))) {
+      available_end = physical_end;
+    } else {
+      memory_manager->MarkAllocated(
+        FrameID{desc->physical_start / kBytesPerFrame},
+        (desc->number_of_pages * kUEFIPageSize) / kBytesPerFrame
+      );
+    }
+  }
+
+  memory_manager->SetMemoryRange(FrameID{1}, FrameID{available_end / kBytesPerFrame});
 
   switch(frame_buffer_config.pixel_format) {
     case kPixelRGBResv8BitPerColor:

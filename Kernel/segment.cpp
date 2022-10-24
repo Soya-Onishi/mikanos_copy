@@ -47,7 +47,7 @@ void set_data_segment(
   desc.bits.default_operation_size = 1; // 32bitスタックセグメント
 }
 
-void setup_segment() {
+void setup_segments() {
   gdt[0].data = 0;
 
   // long-modeではbaseとlimitは使用されないので、0と0xFFFFFuの適当な値にしている。

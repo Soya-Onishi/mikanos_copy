@@ -41,7 +41,8 @@ main.o: main.cpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/array \
   frame_buffer_config.hpp memory_map.hpp graphics.hpp font.hpp \
   console.hpp pci.hpp error.hpp mouse.hpp logger.hpp interrupt.hpp \
-  asmfunc.h queue.hpp usb/memory.hpp usb/device.hpp usb/setupdata.hpp \
+  asmfunc.h queue.hpp segment.hpp x86_descriptor.hpp paging.hpp \
+  memory_manager.hpp usb/memory.hpp usb/device.hpp usb/setupdata.hpp \
   usb/endpoint.hpp usb/arraymap.hpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/optional \
   usb/classdriver/mouse.hpp usb/classdriver/hid.hpp \

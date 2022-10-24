@@ -56,4 +56,6 @@ inline bool IsAvailable(MemoryType type) {
   );
 }
 
+const int kUEFIPageSize = 4096;
+
 #endif
