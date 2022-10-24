@@ -21,7 +21,7 @@ void set_code_segment(
   desc.bits.base_high   = (base >> 24) & 0xFFu;
 
   desc.bits.limit_low  =  limit        & 0xFFFFu;
-  desc.bits.limit_high = (limit >> 16) & 0xFFFFu;
+  desc.bits.limit_high = (limit >> 16) & 0x000Fu;
 
   desc.bits.type = type;
   desc.bits.system_segment = 1;

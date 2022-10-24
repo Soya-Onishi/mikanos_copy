@@ -147,19 +147,35 @@ void show_memory_map(const MemoryMap& memmap) {
 extern "C" void kernel_main_new_stack(
   const FrameBufferConfig& frame_buffer_config_ref,
   const MemoryMap& memmap_ref
-) {
-    __asm__("cli");
-
+) {    
   FrameBufferConfig frame_buffer_config(frame_buffer_config_ref);
   MemoryMap memmap(memmap_ref);    
 
+  switch(frame_buffer_config.pixel_format) {
+    case kPixelRGBResv8BitPerColor:
+      pixel_writer = new(pixel_writer_buf) RGBResv8BitPerColorPixelWriter(frame_buffer_config);
+      break;
+    case kPixelBGRResv8BitPerColor:
+      pixel_writer = new(pixel_writer_buf) BGRResv8BitPerColorPixelWriter(frame_buffer_config);
+      break;
+    default:
+      halt();   
+  }
+
+  SetLogLevel(kInfo);
+
+  console = new(console_buf) Console(*pixel_writer, kDesktopFGColor, kDesktopBGColor);  
+  console->Clear();
+
+  printk("Setting Segment Register Start...");
+  
   setup_segments();
 
   const uint16_t kernel_cs = 1 << 3;
   const uint64_t kernel_ss = 2 << 3;
-  SetDSAll(0);
-  SetCSSS(kernel_cs, kernel_ss);
-
+  SetDSAll(0);  
+  SetCSSS(kernel_cs, kernel_ss);  
+  printk("Setting Segment Register Done...");  
   setup_identity_pagetable();
 
   ::memory_manager = new(memory_manager_buf) BitmapMemoryManager;
@@ -197,25 +213,9 @@ extern "C" void kernel_main_new_stack(
 
   memory_manager->SetMemoryRange(FrameID{1}, FrameID{available_end / kBytesPerFrame});
 
-  switch(frame_buffer_config.pixel_format) {
-    case kPixelRGBResv8BitPerColor:
-      pixel_writer = new(pixel_writer_buf) RGBResv8BitPerColorPixelWriter(frame_buffer_config);
-      break;
-    case kPixelBGRResv8BitPerColor:
-      pixel_writer = new(pixel_writer_buf) BGRResv8BitPerColorPixelWriter(frame_buffer_config);
-      break;
-    default:
-      halt();   
-  }
+  message_queue = new(message_queue_buf) ArrayQueue<Message>(queue_buffer);  
 
-  SetLogLevel(kInfo);
-
-  message_queue = new(message_queue_buf) ArrayQueue<Message>(queue_buffer);
-
-  console = new(console_buf) Console(*pixel_writer, kDesktopFGColor, kDesktopBGColor);  
-  console->Clear();
-
-  show_memory_map(memmap);
+  // show_memory_map(memmap);
 
   mouse_cursor = new(mouse_cursor_buf) MouseCursor {
     pixel_writer, kDesktopBGColor, {300, 200}

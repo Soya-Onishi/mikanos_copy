@@ -54,7 +54,7 @@ LoadGDT:
     mov rbp, rsp
     sub rsp, 10
     mov [rsp], di
-    mov [rsp - 2], rsi
+    mov [rsp + 2], rsi
     lgdt [rsp]
     mov rsp, rbp
     pop rbp
@@ -70,14 +70,14 @@ SetDSAll:
 
 global SetCSSS ; void SetCSSS(uint16_t cs, uint16_t ss);
 SetCSSS:
-    push rbp
+    push rbp    
     mov rbp, rsp
     mov ss, si
-    mov rax, .next
+    mov rax, .next    
     push rdi
-    push rax
+    push rax    
     o64 retf
-.next:
+.next:    
     mov rsp, rbp
     pop rbp
     ret
