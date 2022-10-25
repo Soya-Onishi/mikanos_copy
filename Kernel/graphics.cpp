@@ -33,7 +33,3 @@ void FillRectangle(PixelWriter& writer, const Vector2D<int>& pos, const Vector2D
     }
   }
 }
-
-Vector2D<uint32_t> PixelWriter::GetResolution() {
-  return { config_.horizontal_resolution, config_.vertical_resolution };
-}

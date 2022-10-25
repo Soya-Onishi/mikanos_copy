@@ -24,7 +24,7 @@ static const auto kBytesPerFrame{4_KiB};
 class FrameID {
   public:
     explicit FrameID(size_t id) : id_{id} {}
-    size_t ID() { return id_; }
+    size_t ID() const { return id_; }
     void* Frame() const { return reinterpret_cast<void*>(id_ * kBytesPerFrame); }
 
   private:
@@ -56,3 +56,5 @@ class BitmapMemoryManager {
     bool GetBit(FrameID frame) const;
     void SetBit(FrameID frame, bool allocated);
 };
+
+Error InitializeHeap(BitmapMemoryManager& manager);

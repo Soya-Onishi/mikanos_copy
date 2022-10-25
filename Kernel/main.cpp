@@ -167,7 +167,7 @@ extern "C" void kernel_main_new_stack(
   console = new(console_buf) Console(*pixel_writer, kDesktopFGColor, kDesktopBGColor);  
   console->Clear();
 
-  printk("Setting Segment Register Start...");
+  printk("Setting Segment Register Start...\n");
   
   setup_segments();
 
@@ -175,7 +175,7 @@ extern "C" void kernel_main_new_stack(
   const uint64_t kernel_ss = 2 << 3;
   SetDSAll(0);  
   SetCSSS(kernel_cs, kernel_ss);  
-  printk("Setting Segment Register Done...");  
+  printk("Setting Segment Register Done...\n");  
   setup_identity_pagetable();
 
   ::memory_manager = new(memory_manager_buf) BitmapMemoryManager;
@@ -212,6 +212,11 @@ extern "C" void kernel_main_new_stack(
   }
 
   memory_manager->SetMemoryRange(FrameID{1}, FrameID{available_end / kBytesPerFrame});
+  
+  if(auto err = InitializeHeap(*memory_manager)) {
+    Log(kError, "failed to allocate pages: %s at %s:%d\n", err.Name(), err.File(), err.Line());
+    halt();
+  }
 
   message_queue = new(message_queue_buf) ArrayQueue<Message>(queue_buffer);  
 
