@@ -21,6 +21,7 @@
 #include "paging.hpp"
 #include "memory_manager.hpp"
 #include "layer.hpp"
+#include "timer.hpp"
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
 #include "usb/classdriver/mouse.hpp"
@@ -35,6 +36,8 @@ void* operator new(size_t size, void* buf) {
 
 void operator delete(void* obj) noexcept {}
 */
+
+int printk(const char* fmt, ...);
 
 struct Message {
   enum Type {
@@ -59,7 +62,11 @@ alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 unsigned int mouse_layer_id;
 void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
   layer_manager->MoveRelative(mouse_layer_id, {displacement_x, displacement_y});
+  StartAPICTimer();
   layer_manager->Draw();
+  auto elapsed = LAPICTimerElapsed();
+  StopLAPICTimer();
+  printk("MouseObserver: elapsed = %u\n", elapsed);
 }
 
 inline void halt() {
@@ -165,6 +172,8 @@ extern "C" void kernel_main_new_stack(
   // DrawDesktop(*pixel_writer);
 
   SetLogLevel(kInfo);
+
+  InitializeAPICTimer();
 
   console = new(console_buf) Console(kDesktopFGColor, kDesktopBGColor);  
   console->SetWriter(pixel_writer);
