@@ -2,6 +2,12 @@
 #include "graphics.hpp"
 #include "window.hpp"
 
+Layer::Layer(unsigned int id) : id_{id} {}
+
+unsigned int Layer::ID() const {
+  return id_;
+}
+
 Layer& Layer::Move(Vector2D<int> pos) {
   pos_ = pos;
   return *this;

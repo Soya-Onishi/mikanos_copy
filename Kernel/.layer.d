@@ -1,12 +1,6 @@
-console.o: console.cpp \
-  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/cstring \
-  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__config \
-  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/string.h \
-  font.hpp \
-  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/cstdint \
-  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/stdint.h \
-  graphics.hpp frame_buffer_config.hpp console.hpp layer.hpp \
+layer.o: layer.cpp layer.hpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/memory \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__config \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/type_traits \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/cstddef \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/version \
@@ -14,10 +8,14 @@ console.o: console.cpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/exception \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/cstdlib \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/stdlib.h \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/cstdint \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/stdint.h \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/new \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/utility \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__tuple \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/initializer_list \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/cstring \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/string.h \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__debug \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/limits \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/iterator \
@@ -41,4 +39,4 @@ console.o: console.cpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/climits \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/limits.h \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__split_buffer \
-  window.hpp
+  graphics.hpp frame_buffer_config.hpp window.hpp

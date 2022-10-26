@@ -20,6 +20,7 @@
 #include "segment.hpp"
 #include "paging.hpp"
 #include "memory_manager.hpp"
+#include "layer.hpp"
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
 #include "usb/classdriver/mouse.hpp"
@@ -41,18 +42,13 @@ struct Message {
   } type;
 };
 
-const PixelColor kDesktopBGColor{45, 118, 237};
-const PixelColor kDesktopFGColor{255, 255, 255};
-
 char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
 char console_buf[sizeof(Console)];
-char mouse_cursor_buf[sizeof(MouseCursor)];
 char message_queue_buf[sizeof(ArrayQueue<Message>)];
 char memory_manager_buf[sizeof(BitmapMemoryManager)];
 
 Console* console;
 PixelWriter* pixel_writer;
-MouseCursor* mouse_cursor;
 usb::xhci::Controller* xhc;
 ArrayQueue<Message>* message_queue;
 std::array<Message, 32> queue_buffer;
@@ -60,8 +56,10 @@ BitmapMemoryManager* memory_manager;
 
 alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 
+unsigned int mouse_layer_id;
 void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
-  mouse_cursor->MoveRelative({displacement_x, displacement_y});
+  layer_manager->MoveRelative(mouse_layer_id, {displacement_x, displacement_y});
+  layer_manager->Draw();
 }
 
 inline void halt() {
@@ -148,6 +146,8 @@ extern "C" void kernel_main_new_stack(
   const FrameBufferConfig& frame_buffer_config_ref,
   const MemoryMap& memmap_ref
 ) {    
+  __asm__("cli");
+
   FrameBufferConfig frame_buffer_config(frame_buffer_config_ref);
   MemoryMap memmap(memmap_ref);    
 
@@ -162,10 +162,12 @@ extern "C" void kernel_main_new_stack(
       halt();   
   }
 
+  DrawDesktop(*pixel_writer);
+
   SetLogLevel(kInfo);
 
   console = new(console_buf) Console(*pixel_writer, kDesktopFGColor, kDesktopBGColor);  
-  console->Clear();
+  console->Clear();  
 
   printk("Setting Segment Register Start...\n");
   
@@ -220,11 +222,34 @@ extern "C" void kernel_main_new_stack(
 
   message_queue = new(message_queue_buf) ArrayQueue<Message>(queue_buffer);  
 
-  // show_memory_map(memmap);
+  const int kFrameWidth = frame_buffer_config.horizontal_resolution;
+  const int kFrameHeight = frame_buffer_config.vertical_resolution;
 
-  mouse_cursor = new(mouse_cursor_buf) MouseCursor {
-    pixel_writer, kDesktopBGColor, {300, 200}
-  };
+  auto bgwindow = std::make_shared<Window>(kFrameWidth, kFrameHeight);
+  auto bgwriter = bgwindow->Writer();
+
+  DrawDesktop(*bgwriter);
+  console->SetWriter(bgwriter);
+
+  auto mouse_window = std::make_shared<Window>(kMouseCursorWidth, kMouseCursorHeight);
+  mouse_window->SetTransparentColor(kMouseTransparentColor);
+  DrawMouseCursor(mouse_window->Writer(), {0, 0});
+
+  layer_manager = new LayerManager;
+  layer_manager->SetWriter(pixel_writer);
+
+  auto bglayer_id = layer_manager->NewLayer()
+    .SetWindow(bgwindow)
+    .Move({0, 0})
+    .ID();
+  auto mouse_layer_id = layer_manager->NewLayer()
+    .SetWindow(mouse_window)
+    .Move({200, 200})
+    .ID();
+
+  layer_manager->UpDown(bglayer_id, 0);
+  layer_manager->UpDown(mouse_layer_id, 1);
+  layer_manager->Draw();  
 
   auto err = pci::ScanAllBus();
   Log(kDebug, "ScanAllBus: %s\n", err.Name());
