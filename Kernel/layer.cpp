@@ -18,9 +18,9 @@ Layer& Layer::MoveRelative(Vector2D<int> pos_diff) {
   return *this;
 }
 
-void Layer::DrawTo(PixelWriter& writer) {
+void Layer::DrawTo(FrameBuffer& screen) {
   if(window_) {
-    window_->DrawTo(writer, pos_);
+    window_->DrawTo(screen, pos_);
   }
 }
 
@@ -33,8 +33,8 @@ std::shared_ptr<Window> Layer::GetWindow() const {
   return window_;
 }
 
-void LayerManager::SetWriter(PixelWriter* writer) {
-  writer_ = writer;
+void LayerManager::SetWriter(FrameBuffer* screen) {
+  screen_ = screen;
 }
 
 Layer& LayerManager::NewLayer() {
@@ -71,7 +71,7 @@ void LayerManager::MoveRelative(unsigned int id, Vector2D<int> pos_diff) {
 
 void LayerManager::Draw() const {
   for(auto layer : layer_stack_) {
-    layer->DrawTo(*writer_);
+    layer->DrawTo(*screen_);
   }
 }
 

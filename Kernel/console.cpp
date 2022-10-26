@@ -12,7 +12,7 @@ Console::Console(const PixelColor& fg_color, const PixelColor& bg_color)
 void Console::Clear() {
   for(int y = 0; y < writer_->Height(); y++) {
     for(int x = 0; x < writer_->Width(); x++) {
-      writer_->Write(x, y, bg_color_);
+      writer_->Write(Vector2D<int>{x, y}, bg_color_);
     }    
   }
 
@@ -58,7 +58,7 @@ void Console::Newline() {
   } else {
     for(int y = 0; y < 16 * kRows; y++) {
       for(int x = 0; x < 8 * kColumns; x++) {
-        writer_->Write(x, y, bg_color_);
+        writer_->Write(Vector2D<int>{x, y}, bg_color_);
       }
     }
 

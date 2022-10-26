@@ -47,9 +47,9 @@ main.o: main.cpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__tree \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__node_handle \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/optional \
-  window.hpp timer.hpp usb/memory.hpp usb/device.hpp usb/setupdata.hpp \
-  usb/endpoint.hpp usb/arraymap.hpp usb/classdriver/mouse.hpp \
-  usb/classdriver/hid.hpp usb/classdriver/base.hpp usb/xhci/xhci.hpp \
-  usb/xhci/registers.hpp register.hpp usb/xhci/context.hpp \
-  usb/xhci/ring.hpp usb/xhci/trb.hpp usb/xhci/port.hpp \
-  usb/xhci/devmgr.hpp usb/xhci/device.hpp
+  window.hpp frame_buffer.hpp timer.hpp usb/memory.hpp usb/device.hpp \
+  usb/setupdata.hpp usb/endpoint.hpp usb/arraymap.hpp \
+  usb/classdriver/mouse.hpp usb/classdriver/hid.hpp \
+  usb/classdriver/base.hpp usb/xhci/xhci.hpp usb/xhci/registers.hpp \
+  register.hpp usb/xhci/context.hpp usb/xhci/ring.hpp usb/xhci/trb.hpp \
+  usb/xhci/port.hpp usb/xhci/devmgr.hpp usb/xhci/device.hpp
