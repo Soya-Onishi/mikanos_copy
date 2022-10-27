@@ -6,7 +6,7 @@ struct PixelColor {
   uint8_t r, g, b;  
 };
 
-inline bool operator==(const PixelColor& lhs, const PixelColor& rhs) {
+inline bool operator ==(const PixelColor& lhs, const PixelColor& rhs) {
   return (
     lhs.r == rhs.r &&
     lhs.g == rhs.g &&
@@ -14,7 +14,7 @@ inline bool operator==(const PixelColor& lhs, const PixelColor& rhs) {
   );
 }
 
-inline bool operator!=(const PixelColor& lhs, const PixelColor& rhs) {
+inline bool operator !=(const PixelColor& lhs, const PixelColor& rhs) {
   return !(lhs == rhs);
 }
 
@@ -31,15 +31,17 @@ struct Vector2D {
   }
 };
 
-template <typename T>
-const Vector2D<T>& operator+(const Vector2D<T>& lhs, const Vector2D<T>& rhs) {
-  return Vector2D<T> {
-    lhs.x + rhs.x,
-    lhs.y + rhs.y
-  };
+template <typename T, typename U>
+auto operator +(const Vector2D<T>& lhs, const Vector2D<U>& rhs)
+    -> Vector2D<decltype(lhs.x + rhs.x)> {
+  return {lhs.x + rhs.x, lhs.y + rhs.y};
+  /*
+  auto tmp{lhs};
+  tmp.x += rhs.x;
+  tmp.y += rhs.y;
+  return tmp;
+  */
 }
-
-
 
 class PixelWriter {
   public:    

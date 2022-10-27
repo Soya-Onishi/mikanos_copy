@@ -17,10 +17,12 @@ const uint8_t* GetFont(char c) {
 void WriteAscii(PixelWriter& writer, int x, int y, char c, const PixelColor& color) {
   const uint8_t* font = GetFont(c);
 
+  auto base = Vector2D<int>{x, y};
   for(int dy = 0; dy < 16; dy++) {
     for(int dx = 0; dx < 8; dx++) {
       if((font[dy] << dx) & 0x80) {
-        writer.Write(Vector2D<int>{x + dx, y + dy}, color);
+        auto pos = Vector2D<int>{dx, dy};
+        writer.Write(base + pos, color);
       }
     }
   }

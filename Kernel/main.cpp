@@ -318,7 +318,7 @@ extern "C" void kernel_main_new_stack(
   auto bgwriter = bgwindow->Writer();
 
   DrawDesktop(*bgwriter);  
-  console->SetWriter(bgwriter);
+  console->SetWriter(bgwriter);  
 
   auto mouse_window = std::make_shared<Window>(kMouseCursorWidth, kMouseCursorHeight, shadow_format);
   mouse_window->SetTransparentColor(kMouseTransparentColor);
