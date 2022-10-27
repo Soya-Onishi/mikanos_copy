@@ -31,16 +31,12 @@ struct Vector2D {
   }
 };
 
-template <typename T, typename U>
-auto operator +(const Vector2D<T>& lhs, const Vector2D<U>& rhs)
-    -> Vector2D<decltype(lhs.x + rhs.x)> {
-  return {lhs.x + rhs.x, lhs.y + rhs.y};
-  /*
-  auto tmp{lhs};
-  tmp.x += rhs.x;
-  tmp.y += rhs.y;
-  return tmp;
-  */
+template <typename T>
+Vector2D<T> operator +(const Vector2D<T> lhs, const Vector2D<T> rhs) {
+  return Vector2D<T> { 
+    lhs.x + rhs.x, 
+    lhs.y + rhs.y 
+  };
 }
 
 class PixelWriter {
