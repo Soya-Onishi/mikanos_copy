@@ -2,6 +2,42 @@
 #include "frame_buffer.hpp"
 #include "frame_buffer_config.hpp"
 
+namespace {
+  int BytesPerPixel(PixelFormat format) {
+    auto bits = BitsPerPixel(format);
+    if(bits < 0) {
+      return -1;
+    }
+    
+    return (bits + 7) / 8;
+  }
+
+  uint8_t* FrameAddrAt(Vector2D<int> pos, const FrameBufferConfig& config) {
+    auto bytes = BytesPerPixel(config.pixel_format);
+    if(bytes < 0) {
+      return nullptr;
+    }
+
+    return config.frame_buffer + bytes * (config.pixels_per_scanline * pos.y + pos.x);
+  }
+
+  int BytesPerScanLine(const FrameBufferConfig& config) {
+    auto bytes = BytesPerPixel(config.pixel_format);
+    if(bytes < 0) {
+      return -1;
+    }
+
+    return bytes * config.pixels_per_scanline;
+  }
+
+  Vector2D<int> FrameBufferSize(const FrameBufferConfig& config) {
+    return {
+      static_cast<int>(config.horizontal_resolution),
+      static_cast<int>(config.vertical_resolution)
+    };
+  }
+}
+
 Error FrameBuffer::Initialize(const FrameBufferConfig& config) {
   config_ = config;
 
@@ -65,6 +101,31 @@ Error FrameBuffer::Copy(Vector2D<int> pos, const FrameBuffer& src) {
   }
 
   return MAKE_ERROR(Error::kSuccess);
+}
+
+void FrameBuffer::Move(Vector2D<int> dst_pos, const Rectangle<int>& src) {
+  const auto bytes_per_pixel = BytesPerPixel(config_.pixel_format);
+  const auto bytes_per_scanline = BytesPerScanLine(config_);
+
+  if(dst_pos.y < src.pos.y) {
+    uint8_t* dst_buf = FrameAddrAt(dst_pos, config_);
+    const uint8_t* src_buf = FrameAddrAt(src.pos, config_);
+
+    for(int y = 0; y < src.size.y; y++) {
+      memcpy(dst_buf, src_buf, bytes_per_pixel * src.size.x);
+      dst_buf += bytes_per_scanline;
+      src_buf += bytes_per_scanline;
+    }
+  } else {
+    uint8_t* dst_buf = FrameAddrAt(dst_pos + Vector2D<int>{0, src.size.y - 1}, config_);
+    const uint8_t* src_buf = FrameAddrAt(src.pos + Vector2D<int>{0, src.size.y - 1}, config_);
+
+    for (int y = 0; y < src.size.y; y++) {
+      memcpy(dst_buf, src_buf, bytes_per_pixel * src.size.x);
+      dst_buf -= bytes_per_scanline;      
+      src_buf -= bytes_per_scanline;      
+    }
+  }
 }
 
 int BitsPerPixel(PixelFormat format) {

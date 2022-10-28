@@ -31,4 +31,4 @@ interrupt.o: interrupt.cpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/_ansi.h \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/functional \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/bit \
-  interrupt.hpp logger.hpp
+  interrupt.hpp logger.hpp x86_descriptor.hpp

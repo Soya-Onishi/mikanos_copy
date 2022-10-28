@@ -28,7 +28,8 @@ class Window {
 
     void DrawTo(FrameBuffer& dst, Vector2D<int> position);    
     void SetTransparentColor(std::optional<PixelColor> c);
-    WindowWriter* Writer();
+    void Move(Vector2D<int> dst_pos, const Rectangle<int>& src);
+    WindowWriter* Writer();    
 
     PixelColor& At(int x, int y);
     const PixelColor& At(int x, int y) const;

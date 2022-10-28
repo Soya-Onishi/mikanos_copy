@@ -93,7 +93,14 @@ int printk(const char* fmt, ...) {
   result = vsprintf(s, fmt, ap);
   va_end(ap);
 
+  StartAPICTimer();
   console->PutString(s);
+  auto elapsed = LAPICTimerElapsed();
+  StopLAPICTimer();
+
+  sprintf(s, "[%9d]", elapsed);
+  console->PutString(s);
+
   return result;
 }
 
@@ -318,7 +325,7 @@ extern "C" void kernel_main_new_stack(
   auto bgwriter = bgwindow->Writer();
 
   DrawDesktop(*bgwriter);  
-  console->SetWriter(bgwriter);  
+  console->SetWindow(bgwindow);
 
   auto mouse_window = std::make_shared<Window>(kMouseCursorWidth, kMouseCursorHeight, shadow_format);
   mouse_window->SetTransparentColor(kMouseTransparentColor);

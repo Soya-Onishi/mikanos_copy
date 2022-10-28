@@ -14,10 +14,9 @@ const uint8_t* GetFont(char c) {
   return &_binary_hankaku_bin_start + index;
 }
 
-void WriteAscii(PixelWriter& writer, int x, int y, char c, const PixelColor& color) {
+void WriteAscii(PixelWriter& writer, Vector2D<int> base, char c, const PixelColor& color) {
   const uint8_t* font = GetFont(c);
 
-  auto base = Vector2D<int>{x, y};
   for(int dy = 0; dy < 16; dy++) {
     for(int dx = 0; dx < 8; dx++) {
       if((font[dy] << dx) & 0x80) {
@@ -28,8 +27,9 @@ void WriteAscii(PixelWriter& writer, int x, int y, char c, const PixelColor& col
   }
 }
 
-void WriteString(PixelWriter& writer, int x, int y, const char* s, const PixelColor& color) {
+void WriteString(PixelWriter& writer, Vector2D<int> pos, const char* s, const PixelColor& color) {
   for(int i = 0; s[i] != '\0'; i++) {
-    WriteAscii(writer, x + i * 8, y, s[i], color);
+    auto base = Vector2D<int> { pos.x + i * 8, pos.y };
+    WriteAscii(writer, base, s[i], color);
   }
 }

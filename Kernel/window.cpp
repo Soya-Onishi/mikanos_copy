@@ -49,6 +49,10 @@ void Window::SetTransparentColor(std::optional<PixelColor> c) {
   transparent_color_ = c;
 }
 
+void Window::Move(Vector2D<int> dst_pos, const Rectangle<int>& src) {
+  shadow_buffer_.Move(dst_pos, src);
+}
+
 Window::WindowWriter* Window::Writer() {
   return &writer_;
 }

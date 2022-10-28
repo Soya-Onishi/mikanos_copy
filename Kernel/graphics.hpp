@@ -39,6 +39,12 @@ Vector2D<T> operator +(const Vector2D<T> lhs, const Vector2D<T> rhs) {
   };
 }
 
+template <typename T>
+struct Rectangle {
+  Vector2D<T> pos;
+  Vector2D<T> size;
+};
+
 class PixelWriter {
   public:    
     virtual ~PixelWriter() = default;
