@@ -122,6 +122,10 @@ void FrameBuffer::Move(Vector2D<int> dst_pos, const Rectangle<int>& src) {
   }
 }
 
+FrameBufferConfig FrameBuffer::Config() {
+  return config_;
+}
+
 int BitsPerPixel(PixelFormat format) {
   switch(format) {
     case kPixelRGBResv8BitPerColor: return 32;

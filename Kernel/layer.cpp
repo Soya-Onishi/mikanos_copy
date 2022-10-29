@@ -39,6 +39,10 @@ Vector2D<int> Layer::GetPosition() const {
 
 void LayerManager::SetWriter(FrameBuffer* screen) {
   screen_ = screen;
+
+  FrameBufferConfig back_config = screen->Config();
+  back_config.frame_buffer = nullptr;
+  back_buffer_.Initialize(back_config);
 }
 
 Layer& LayerManager::NewLayer() {
@@ -79,13 +83,15 @@ void LayerManager::MoveRelative(unsigned int id, Vector2D<int> pos_diff) {
 
 void LayerManager::Draw(const Rectangle<int>& area) const {
   for(auto layer : layer_stack_) {
-    layer->DrawTo(*screen_, area);
+    layer->DrawTo(back_buffer_, area);    
   }
+
+  screen_->Copy(area.pos, back_buffer_, area);
 }
 
 void LayerManager::Draw(unsigned int id) const {
   bool draw = false;
-  Rectangle<int> window_area;
+  Rectangle<int> window_area;  
   for(auto layer : layer_stack_) {
     if(layer->ID() == id) {
       window_area.size = layer->GetWindow()->Size();
@@ -94,9 +100,11 @@ void LayerManager::Draw(unsigned int id) const {
     }
 
     if(draw) {
-      layer->DrawTo(*screen_, window_area);
+      layer->DrawTo(back_buffer_, window_area);
     }
   }
+
+  screen_->Copy(window_area.pos, back_buffer_, window_area);
 }
 
 void LayerManager::Hide(unsigned int id) {
