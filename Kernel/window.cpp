@@ -21,25 +21,31 @@ Window::Window(int width, int height, PixelFormat shadow_format) : width_{width}
   }
 }
 
-void Window::DrawTo(FrameBuffer& dst, Vector2D<int> position) {
+void Window::DrawTo(FrameBuffer& dst, Vector2D<int> pos, const Rectangle<int>& area) {
   if(!transparent_color_) {
-    dst.Copy(position, shadow_buffer_);
+    Rectangle<int> window_area{pos, Size()};
+    Rectangle<int> intersection = area & window_area;
+    auto copy_area = Rectangle<int> {
+      intersection.pos - pos,
+      intersection.size
+    };
+    dst.Copy(intersection.pos, shadow_buffer_, copy_area);
     return;
   }
 
   const auto tc = transparent_color_.value();  
   auto& writer = dst.Writer();
-  auto height_init = position.y < 0 ? -position.y : 0;
-  auto height_end  = position.y + Height() > writer.Height() ? writer.Height() - position.y : Height();
-  auto width_init  = position.x < 0 ? -position.x : 0;
-  auto width_end   = position.x + Width() > writer.Width() ? writer.Width() - position.x : Width();
+  auto height_init = pos.y < 0 ? -pos.y : 0;
+  auto height_end  = pos.y + Height() > writer.Height() ? writer.Height() - pos.y : Height();
+  auto width_init  = pos.x < 0 ? -pos.x : 0;
+  auto width_end   = pos.x + Width() > writer.Width() ? writer.Width() - pos.x : Width();
   for(
     int y = height_init; y < height_end; y++) {
     for(int x = width_init; x < width_end; x++) {
       const auto c = At(x, y);
 
       if(tc != c) {
-        writer.Write(position + Vector2D<int>{x, y}, c);
+        writer.Write(pos + Vector2D<int>{x, y}, c);
       }
     }
   }
@@ -76,4 +82,11 @@ int Window::Width() const {
 
 int Window::Height() const {
   return height_;
+}
+
+Vector2D<int> Window::Size() const {
+  return {
+    width_,
+    height_
+  };
 }

@@ -75,8 +75,7 @@ void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
     std::min(std::max(0, new_pos.y), pixel_writer->Height() - 1)
   };  
   
-  layer_manager->Move(mouse_layer_id, revised_pos);  
-  layer_manager->Draw();  
+  layer_manager->Move(mouse_layer_id, revised_pos);    
 }
 
 inline void halt() {
@@ -161,6 +160,38 @@ void show_memory_map(const MemoryMap& memmap) {
           desc->attribute
         );
         break;
+      }
+    }
+  }
+}
+
+constexpr PixelColor ToColor(uint32_t c) {
+  return {
+    static_cast<uint8_t>((c >> 16) & 0xFF),
+    static_cast<uint8_t>((c >>  8) & 0xFF),
+    static_cast<uint8_t>((c      ) & 0xFF)
+  };
+}
+
+void DrawWindow(PixelWriter& writer, const char* title) {
+  auto fill_rect = [&writer](Vector2D<int> pos, Vector2D<int> size, uint32_t c) {
+    FillRectangle(writer, pos, size, ToColor(c));
+  };
+
+  const auto win_w = writer.Width();
+  const auto win_h = writer.Height();
+
+  fill_rect({0, 0}, {win_w, win_h}, 0xC6C6C6);
+  fill_rect({1, 1}, {win_w - 1, 20}, 0x000084);  
+  WriteString(writer, {2, 4}, title, ToColor(0xFFFFFF));
+  
+  // Draw Close button
+  auto button_base = Vector2D<int>{win_w - (16 + 2), 2};
+  fill_rect(button_base, {16, 16}, 0xC6C6C6);
+  for(int y = 2; y < (16 - 2); y++) {
+    for(int x = 2; x < (16 - 2); x++) {
+      if(x == y || (16 - x) == y) {
+        writer.Write(button_base + Vector2D<int>{x, y}, ToColor(0x000000));
       }
     }
   }
@@ -335,11 +366,18 @@ extern "C" void kernel_main_new_stack(
   auto bgwriter = bgwindow->Writer();
 
   DrawDesktop(*bgwriter);  
-  console->SetWindow(bgwindow);
 
   auto mouse_window = std::make_shared<Window>(kMouseCursorWidth, kMouseCursorHeight, shadow_format);
   mouse_window->SetTransparentColor(kMouseTransparentColor);
   DrawMouseCursor(mouse_window->Writer(), {0, 0});
+
+  auto main_window = std::make_shared<Window>(160, 68, shadow_format);
+  DrawWindow(*main_window->Writer(), "Hello Window");
+
+  auto console_window = std::make_shared<Window>(
+    Console::kColumns * 8, Console::kRows * 16, shadow_format
+  );  
+  console->SetWindow(console_window);
 
   FrameBuffer screen;
   if(auto err = screen.Initialize(frame_buffer_config)) {
@@ -357,16 +395,36 @@ extern "C" void kernel_main_new_stack(
     .SetWindow(mouse_window)
     .Move({200, 200})
     .ID();  
+  auto main_window_layer_id = layer_manager->NewLayer()
+    .SetWindow(main_window)
+    .Move({300, 100})
+    .ID();
+  console->SetLayerID(layer_manager->NewLayer()
+    .SetWindow(console_window)
+    .Move({0, 0})
+    .ID()
+  );
   
-  layer_manager->UpDown(bglayer_id, 0);
-  layer_manager->UpDown(mouse_layer_id, 1);
-  layer_manager->Draw();  
+
+  layer_manager->UpDown(bglayer_id, 0);  
+  layer_manager->UpDown(console->LayerID(), 1);  
+  layer_manager->UpDown(main_window_layer_id, 2);    
+  layer_manager->UpDown(mouse_layer_id, 3);
+  layer_manager->Draw(bglayer_id);
+
+  unsigned int count = 0;
+  char counter_str[128];
 
   while(true) {
+    count++;
+    sprintf(counter_str, "0x%08X", count);
+    FillRectangle(*main_window->Writer(), {24, 28}, {8 * 10, 16}, ToColor(0xC6C6C6));
+    WriteString(*main_window->Writer(), {24, 28}, counter_str, ToColor(0x000000));
+    layer_manager->Draw(main_window_layer_id);
+
     __asm__("cli");
     if(message_queue->Count() == 0) {
-      __asm__("sti");
-      __asm__("hlt");
+      __asm__("sti");      
       continue;
     }
     
