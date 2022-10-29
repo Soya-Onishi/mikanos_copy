@@ -33,6 +33,10 @@ std::shared_ptr<Window> Layer::GetWindow() const {
   return window_;
 }
 
+Vector2D<int> Layer::GetPosition() const {
+  return pos_;
+}
+
 void LayerManager::SetWriter(FrameBuffer* screen) {
   screen_ = screen;
 }
@@ -81,6 +85,12 @@ void LayerManager::Hide(unsigned int id) {
   if(pos != layer_stack_.end()) {
     layer_stack_.erase(pos);
   }
+}
+
+const Layer& LayerManager::GetLayer(unsigned int id) {
+  auto layer = FindLayer(id);
+
+  return *layer;
 }
 
 void LayerManager::UpDown(unsigned int id, int new_height) {

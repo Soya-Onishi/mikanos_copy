@@ -61,12 +61,22 @@ alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 
 unsigned int mouse_layer_id;
 void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
-  layer_manager->MoveRelative(mouse_layer_id, {displacement_x, displacement_y});
-  StartAPICTimer();
-  layer_manager->Draw();
-  auto elapsed = LAPICTimerElapsed();
-  StopLAPICTimer();
-  printk("MouseObserver: elapsed = %u\n", elapsed);
+  const auto layer = layer_manager->GetLayer(mouse_layer_id);
+  const auto window = layer.GetWindow();
+  auto width = window->Width();
+  auto height = window->Height();
+  auto old_pos = layer.GetPosition();  
+  auto new_pos = Vector2D<int> {
+    old_pos.x + displacement_x,
+    old_pos.y + displacement_y 
+  };
+  auto revised_pos = Vector2D<int>{
+    std::min(std::max(0, new_pos.x), pixel_writer->Width() - 1),
+    std::min(std::max(0, new_pos.y), pixel_writer->Height() - 1)
+  };  
+  
+  layer_manager->Move(mouse_layer_id, revised_pos);  
+  layer_manager->Draw();  
 }
 
 inline void halt() {
@@ -335,7 +345,6 @@ extern "C" void kernel_main_new_stack(
   if(auto err = screen.Initialize(frame_buffer_config)) {
     Log(kError, "failed to initialize frame buffer: %s at %s:%d", err.Name(), err.File(), err.Line());
   }
-
 
   layer_manager = new LayerManager;
   layer_manager->SetWriter(&screen);

@@ -16,9 +16,10 @@ class Layer {
     std::shared_ptr<Window> GetWindow() const;
 
     Layer& Move(Vector2D<int> pos);
-    Layer& MoveRelative(Vector2D<int> pos_diff);
+    Layer& MoveRelative(Vector2D<int> pos_diff);    
 
-    void DrawTo(FrameBuffer& screen);
+    void DrawTo(FrameBuffer& screen);    
+    Vector2D<int> GetPosition() const;
 
   private:
     unsigned int id_;
@@ -35,6 +36,8 @@ class LayerManager {
     void MoveRelative(unsigned int id, Vector2D<int> pos_diff);
     void UpDown(unsigned int id, int new_height);
     void Hide(unsigned int id);
+    const Layer& GetLayer(unsigned int id);
+
   private:
     FrameBuffer* screen_{nullptr};    
     std::vector<std::unique_ptr<Layer>> layers_{};
