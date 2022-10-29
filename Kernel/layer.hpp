@@ -17,14 +17,18 @@ class Layer {
 
     Layer& Move(Vector2D<int> pos);
     Layer& MoveRelative(Vector2D<int> pos_diff);    
+    Layer& SetDraggable(bool draggable);
 
     void DrawTo(FrameBuffer& screen, const Rectangle<int>& area);    
     Vector2D<int> GetPosition() const;
+    
+    bool IsDraggable() const;
 
   private:
     unsigned int id_;
     Vector2D<int> pos_;
     std::shared_ptr<Window> window_;
+    bool draggable_{false};
 };
 
 class LayerManager {
@@ -38,15 +42,16 @@ class LayerManager {
     void UpDown(unsigned int id, int new_height);
     void Hide(unsigned int id);
     const Layer& GetLayer(unsigned int id);
+    Layer* FindLayerByPosition(Vector2D<int> pos, unsigned int exclude_id) const;    
 
   private:
     FrameBuffer* screen_{nullptr};    
     mutable FrameBuffer back_buffer_{};
     std::vector<std::unique_ptr<Layer>> layers_{};
     std::vector<Layer*> layer_stack_{};
-    unsigned int latest_id_{0};
+    unsigned int latest_id_{0};    
 
-    Layer* FindLayer(unsigned int id);
+    Layer* FindLayer(unsigned int id);    
 };
 
 inline LayerManager* layer_manager;

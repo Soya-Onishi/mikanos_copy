@@ -41,7 +41,7 @@ void DrawDesktop(PixelWriter& writer) {
   FillRectangle(writer,
                 {0, 0},
                 {width, height - 50},
-                kDesktopBGColor);
+                {255, 255, 255});
   FillRectangle(writer,
                 {0, height - 50},
                 {width, 50},

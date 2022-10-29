@@ -60,22 +60,45 @@ BitmapMemoryManager* memory_manager;
 alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 
 unsigned int mouse_layer_id;
-void MouseObserver(int8_t displacement_x, int8_t displacement_y) {
+void MouseObserver(uint8_t buttons, int8_t displacement_x, int8_t displacement_y) {
+  static unsigned int mouse_drag_layer_id = 0;
+  static uint8_t previous_buttons = 0;
+
   const auto layer = layer_manager->GetLayer(mouse_layer_id);
   const auto window = layer.GetWindow();
   auto width = window->Width();
   auto height = window->Height();
   auto old_pos = layer.GetPosition();  
-  auto new_pos = Vector2D<int> {
-    old_pos.x + displacement_x,
-    old_pos.y + displacement_y 
-  };
-  auto revised_pos = Vector2D<int>{
-    std::min(std::max(0, new_pos.x), pixel_writer->Width() - 1),
-    std::min(std::max(0, new_pos.y), pixel_writer->Height() - 1)
+  auto diff_pos = Vector2D<int> { 
+    displacement_x, 
+    displacement_y 
+  };  
+  auto tmp_pos = old_pos + diff_pos;
+  auto new_pos = Vector2D<int>{
+    std::min(std::max(0, tmp_pos.x), pixel_writer->Width() - 1),
+    std::min(std::max(0, tmp_pos.y), pixel_writer->Height() - 1)
   };  
   
-  layer_manager->Move(mouse_layer_id, revised_pos);    
+  layer_manager->Move(mouse_layer_id, new_pos);    
+
+  const bool previous_left_pressed = (previous_buttons & 0x01);
+  const bool left_pressed = (buttons & 0x01);
+  
+  if(!previous_left_pressed && left_pressed) {
+    auto layer = layer_manager->FindLayerByPosition(old_pos, mouse_layer_id);
+
+    if(layer && layer->IsDraggable()) {
+      mouse_drag_layer_id = layer->ID();
+    }
+  } else if(previous_left_pressed && left_pressed) {
+    if(mouse_drag_layer_id > 0) {
+      layer_manager->MoveRelative(mouse_drag_layer_id, diff_pos);
+    }
+  } else if(previous_left_pressed && !left_pressed) {
+    mouse_drag_layer_id = 0;
+  }
+
+  previous_buttons = buttons;
 }
 
 inline void halt() {
@@ -100,14 +123,8 @@ int printk(const char* fmt, ...) {
 
   va_start(ap, fmt);
   result = vsprintf(s, fmt, ap);
-  va_end(ap);
+  va_end(ap);  
 
-  StartAPICTimer();
-  console->PutString(s);
-  auto elapsed = LAPICTimerElapsed();
-  StopLAPICTimer();
-
-  sprintf(s, "[%9d]", elapsed);
   console->PutString(s);
 
   return result;
@@ -397,6 +414,7 @@ extern "C" void kernel_main_new_stack(
     .ID();  
   auto main_window_layer_id = layer_manager->NewLayer()
     .SetWindow(main_window)
+    .SetDraggable(true)
     .Move({300, 100})
     .ID();
   console->SetLayerID(layer_manager->NewLayer()
