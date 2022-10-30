@@ -152,11 +152,11 @@ extern "C" void kernel_main_new_stack(
   SetLogLevel(kInfo);
 
   InitializeGraphics(frame_buffer_config_ref);
-  InitializeConsole();
-  InitializeAPICTimer();  
+  InitializeConsole();  
   InitializeSegment();
   InitializePagetable();
   InitializeMemoryManager(memmap);    
+  InitializeAPICTimer();
 
   ::message_queue = new std::deque<Message>(32);
   InitializeInterrupt(::message_queue);
@@ -174,8 +174,11 @@ extern "C" void kernel_main_new_stack(
 
   auto main_window_writer = layer_manager->GetLayer(main_window_layer_id).GetWindow()->Writer();
   while(true) {
-    count++;
-    sprintf(counter_str, "0x%08X", count);    
+    __asm__("cli");
+    const auto tick = timer_manager->CurrentTick();
+    __asm__("sti");
+    
+    sprintf(counter_str, "0x%08X", tick);    
     FillRectangle(*main_window_writer, {24, 28}, {8 * 10, 16}, ToColor(0xC6C6C6));
     WriteString(*main_window_writer, {24, 28}, counter_str, ToColor(0x000000));
     layer_manager->Draw(main_window_layer_id);
@@ -183,6 +186,7 @@ extern "C" void kernel_main_new_stack(
     __asm__("cli");
     if(message_queue->size() == 0) {
       __asm__("sti");      
+      __asm__("hlt");
       continue;
     }
     

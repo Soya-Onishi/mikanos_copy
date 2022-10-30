@@ -10,10 +10,16 @@ namespace {
   volatile uint32_t& divide_config = *reinterpret_cast<uint32_t*>(0xFEE003E0u);
 }
 
+void TimerManager::Tick() {
+  tick_++;
+}
+
 void InitializeAPICTimer() {
+  timer_manager = new TimerManager;
+
   divide_config = 0b1011;
-  lvt_timer = (0b010 << 16) | InterruptVector::kLAPICTimer;
-  initial_count = kCountMax;
+  lvt_timer = (0b010 << 16) | InterruptVector::kLAPICTimer;    
+  initial_count = 0x1000000u;
 }
 
 void StartAPICTimer() {
@@ -26,4 +32,8 @@ uint32_t LAPICTimerElapsed() {
 
 void StopLAPICTimer() {
   initial_count = 0;
+}
+
+void LAPICTimerOnInterrupt() {
+  timer_manager->Tick();
 }

@@ -34,7 +34,7 @@ interrupt.o: interrupt.cpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/deque \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__split_buffer \
   interrupt.hpp message.hpp logger.hpp x86_descriptor.hpp asmfunc.h \
-  pci.hpp error.hpp \
+  timer.hpp pci.hpp error.hpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/cstdio \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/stdio.h \
   usb/memory.hpp usb/device.hpp usb/setupdata.hpp usb/endpoint.hpp \

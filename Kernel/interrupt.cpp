@@ -5,6 +5,7 @@
 #include "interrupt.hpp"
 #include "message.hpp"
 #include "asmfunc.h"
+#include "timer.hpp"
 
 #include "pci.hpp"
 #include "usb/memory.hpp"
@@ -61,7 +62,7 @@ void IntHandlerXHCI(InterruptFrame* frame) {
 
 __attribute__((interrupt))
 void IntHandlerAPICTimer(InterruptFrame* frame) {
-  message_queue->push_back(Message{Message::kInterruptLAPICTimer});
+  LAPICTimerOnInterrupt();
   NotifyEndOfInterrupt();
 }
 
