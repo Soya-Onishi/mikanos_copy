@@ -34,4 +34,4 @@ pci.o: pci.cpp pci.hpp \
   error.hpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/cstdio \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/stdio.h \
-  asmfunc.h
+  asmfunc.h logger.hpp

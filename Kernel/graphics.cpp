@@ -55,3 +55,29 @@ void DrawDesktop(PixelWriter& writer) {
                 {30, 30},
                 {160, 160, 160});
 }
+
+namespace {
+  char screen_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];  
+}
+
+void InitializeGraphics(const FrameBufferConfig& config) {
+  ::screen_config = config;
+
+  switch(config.pixel_format) {
+    case kPixelRGBResv8BitPerColor:
+      screen_writer = new(screen_writer_buf) RGBResv8BitPerColorPixelWriter(config);
+      break;
+    case kPixelBGRResv8BitPerColor:
+      screen_writer = new(screen_writer_buf) BGRResv8BitPerColorPixelWriter(config);
+      break;
+    default:
+      exit(1);
+  }
+}
+
+Vector2D<int> ScreenSize() {
+  return Vector2D<int> {
+    static_cast<int>(screen_config.horizontal_resolution),
+    static_cast<int>(screen_config.vertical_resolution)
+  };
+}

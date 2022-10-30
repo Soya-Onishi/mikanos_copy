@@ -6,6 +6,10 @@
 #include "layer.hpp"
 #include "window.hpp"
 
+namespace {  
+  char console_buf[sizeof(Console)];
+}
+
 Console::Console(const PixelColor& fg_color, const PixelColor& bg_color)
   : writer_{nullptr}, layer_id_{0}, fg_color_{fg_color}, bg_color_{bg_color}, 
     buffer_{}, cursor_row_{0}, cursor_column_{0} {
@@ -102,4 +106,10 @@ void Console::Refresh() {
     auto pos = Vector2D<int>{0, row * 16};
     WriteString(*writer_, pos, buffer_[row], fg_color_);
   }
+}
+
+void InitializeConsole() {
+  console = new(console_buf) Console(kDesktopFGColor, kDesktopBGColor);  
+  console->SetWriter(screen_writer);
+  console->Clear();  
 }

@@ -14,7 +14,7 @@ namespace {
   alignas(kPageSize4K) std::array<std::array<uint64_t, 512>, kPageDirectoryCount> page_directory;
 }
 
-void setup_identity_pagetable() {
+void InitializePagetable() {
   pml4_table[0] = reinterpret_cast<uint64_t>(&pdp_table[0]) | 0x03;
   for(int i_pdpt = 0; i_pdpt < page_directory.size(); i_pdpt++) {
     pdp_table[i_pdpt] = reinterpret_cast<uint64_t>(&page_directory[i_pdpt]) | 0x03;

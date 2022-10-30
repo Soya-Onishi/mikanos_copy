@@ -1,6 +1,9 @@
 #pragma once
 
 #include <cstdint>
+#include <deque>
+
+#include "message.hpp"
 #include "logger.hpp"
 #include "x86_descriptor.hpp"
 
@@ -57,3 +60,5 @@ struct InterruptFrame {
   uint64_t rsp;
   uint64_t ss;
 };
+
+void InitializeInterrupt(std::deque<Message>* message_queue);

@@ -55,3 +55,11 @@ void setup_segments() {
   set_data_segment(gdt[2], DescriptorType::kReadWrite, 0, 0, 0xFFFFFu);
   LoadGDT(sizeof(gdt) - 1, reinterpret_cast<uint64_t>(&gdt[0]));
 }
+
+void InitializeSegment() {
+  setup_segments();
+  const uint16_t kernel_cs = 1 << 3;
+  const uint64_t kernel_ss = 2 << 3;
+  SetDSAll(0);  
+  SetCSSS(kernel_cs, kernel_ss);      
+}

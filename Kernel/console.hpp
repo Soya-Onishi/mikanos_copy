@@ -30,3 +30,7 @@ class Console {
     int cursor_row_;
     int cursor_column_;    
 };
+
+inline Console* console;
+
+void InitializeConsole();

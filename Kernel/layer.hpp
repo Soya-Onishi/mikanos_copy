@@ -55,3 +55,5 @@ class LayerManager {
 };
 
 inline LayerManager* layer_manager;
+
+void InitializeLayer();

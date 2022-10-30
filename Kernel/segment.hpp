@@ -23,4 +23,4 @@ union SegmentDescriptor {
   } __attribute__((packed)) bits;
 } __attribute__((packed));
 
-void setup_segments();
+void InitializeSegment();

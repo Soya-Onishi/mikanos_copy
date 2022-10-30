@@ -1,6 +1,21 @@
 #include <cstdint>
 #include <array>
+#include <deque>
+
 #include "interrupt.hpp"
+#include "message.hpp"
+#include "asmfunc.h"
+
+#include "pci.hpp"
+#include "usb/memory.hpp"
+#include "usb/device.hpp"
+#include "usb/classdriver/mouse.hpp"
+#include "usb/xhci/xhci.hpp"
+#include "usb/xhci/trb.hpp"
+
+namespace {
+  std::deque<Message>* message_queue;
+}
 
 void SetIDTEntry(
   InterruptDescriptor& desc,
@@ -36,4 +51,24 @@ InterruptDescriptorAttribute MakeIDTAttr(
 void NotifyEndOfInterrupt() {
   volatile auto end_of_interrupt = reinterpret_cast<uint32_t*>(0xfee000b0);
   *end_of_interrupt = 0;
+}
+
+__attribute__((interrupt))
+void IntHandlerXHCI(InterruptFrame* frame) {
+  message_queue->push_back(Message{Message::kInterruptXHCI});
+  NotifyEndOfInterrupt();
+}
+
+void InitializeInterrupt(std::deque<Message>* message_queue) {  
+  ::message_queue = message_queue;
+
+  const uint16_t cs = GetCS();
+  // const uint64_t offset = reinterpret_cast<uint64_t>(IntHandlerXHCI);
+  SetIDTEntry(
+    idt[InterruptVector::kXHCI], 
+    MakeIDTAttr(DescriptorType::kInterruptGate), 
+    reinterpret_cast<uint64_t>(IntHandlerXHCI),
+    cs
+  );
+  LoadIDT(sizeof(idt) - 1, reinterpret_cast<uint64_t>(&idt[0]));
 }

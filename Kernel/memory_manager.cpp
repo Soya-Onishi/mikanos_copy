@@ -1,8 +1,14 @@
 #include "error.hpp"
 #include "memory_manager.hpp"
+#include "memory_map.hpp"
+#include "logger.hpp"
 
 extern "C" caddr_t program_break;
 extern "C" caddr_t program_break_end;
+
+namespace {
+  char memory_manager_buf[sizeof(BitmapMemoryManager)];
+}
 
 BitmapMemoryManager::BitmapMemoryManager() 
   : alloc_map_{}, range_begin_{FrameID{0}}, range_end_{FrameID{kFrameCount}} {    
@@ -81,4 +87,46 @@ Error InitializeHeap(BitmapMemoryManager& manager) {
   program_break_end = program_break + kHeapFrames * kBytesPerFrame;
 
   return MAKE_ERROR(Error::kSuccess);
+}
+
+void InitializeMemoryManager(MemoryMap& memmap) {
+  ::memory_manager = new(memory_manager_buf) BitmapMemoryManager;
+  const auto memory_map_base = reinterpret_cast<uintptr_t>(memmap.buffer);
+  uintptr_t available_end = 0;
+  for(
+    uintptr_t iter = memory_map_base;
+    iter < memory_map_base + memmap.map_size;
+    iter += memmap.descriptor_size
+  ) {
+    auto desc = reinterpret_cast<const MemoryDescriptor*>(iter);
+    if(available_end < desc->physical_start) {
+      memory_manager->MarkAllocated(
+        FrameID{ available_end / kBytesPerFrame },
+        (desc->physical_start - available_end) / kBytesPerFrame
+      );
+    }
+
+    const auto physical_end = desc->physical_start + desc->number_of_pages * kUEFIPageSize;
+
+    // TODO: 要検証
+    // IsAvailableがTrueでavailable_endを更新しているが、
+    // Falseでもavailable_endを更新してもいいのでは？
+    // Falseのときは更新していないが、
+    // この場合次のループのときに同じ場所をMarkAllocatedすることにならないか
+    if(IsAvailable(static_cast<MemoryType>(desc->type))) {
+      available_end = physical_end;
+    } else {
+      memory_manager->MarkAllocated(
+        FrameID{desc->physical_start / kBytesPerFrame},
+        (desc->number_of_pages * kUEFIPageSize) / kBytesPerFrame
+      );
+    }
+  }
+
+  memory_manager->SetMemoryRange(FrameID{1}, FrameID{available_end / kBytesPerFrame});
+
+  if(auto err = InitializeHeap(*memory_manager)) {
+    Log(kError, "failed to allocate pages: %s at %s:%d\n", err.Name(), err.File(), err.Line());
+    exit(1);
+  }
 }

@@ -39,12 +39,13 @@ main.o: main.cpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/limits.h \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__split_buffer \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/array \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/deque \
   frame_buffer_config.hpp memory_map.hpp graphics.hpp font.hpp \
   console.hpp window.hpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/optional \
   frame_buffer.hpp error.hpp pci.hpp mouse.hpp logger.hpp interrupt.hpp \
-  x86_descriptor.hpp asmfunc.h queue.hpp segment.hpp paging.hpp \
-  memory_manager.hpp layer.hpp \
+  message.hpp x86_descriptor.hpp asmfunc.h queue.hpp segment.hpp \
+  paging.hpp memory_manager.hpp layer.hpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/map \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__tree \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__node_handle \

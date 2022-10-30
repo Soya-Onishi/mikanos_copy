@@ -33,4 +33,4 @@ memory_manager.o: memory_manager.cpp error.hpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/_ansi.h \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/functional \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/bit \
-  memory_manager.hpp
+  memory_manager.hpp memory_map.hpp logger.hpp
