@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <array>
 #include <deque>
 
 #include "message.hpp"
@@ -11,6 +12,7 @@ class InterruptVector {
   public:
     enum Number {
       kXHCI = 0x40,
+      kLAPICTimer = 0x41,
     };
 };
 

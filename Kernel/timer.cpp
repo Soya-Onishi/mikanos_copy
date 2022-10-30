@@ -1,5 +1,6 @@
 #include <cstdint>
 #include "timer.hpp"
+#include "interrupt.hpp"
 
 namespace {
   const uint32_t kCountMax = 0xFFFFFFFFu;
@@ -11,7 +12,8 @@ namespace {
 
 void InitializeAPICTimer() {
   divide_config = 0b1011;
-  lvt_timer = (0b001 << 16) | 32;
+  lvt_timer = (0b010 << 16) | InterruptVector::kLAPICTimer;
+  initial_count = kCountMax;
 }
 
 void StartAPICTimer() {

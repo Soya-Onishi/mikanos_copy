@@ -167,7 +167,7 @@ extern "C" void kernel_main_new_stack(
   InitializeLayer();
   auto main_window_layer_id = InitializeMainWindow();    
   InitializeMouse();
-  layer_manager->Draw({{0, 0}, ScreenSize()});
+  layer_manager->Draw({{0, 0}, ScreenSize()});  
 
   unsigned int count = 0;
   char counter_str[128];
@@ -193,6 +193,9 @@ extern "C" void kernel_main_new_stack(
     switch(msg.type) {
       case Message::kInterruptXHCI:
         usb::xhci::ProcessEvents();        
+        break;
+      case Message::kInterruptLAPICTimer:
+        printk("Timer Interrupt\n");
         break;
       default:
         Log(kError, "Unknown message type: %d\n", msg.type);

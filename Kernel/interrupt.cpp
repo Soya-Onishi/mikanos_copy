@@ -59,6 +59,12 @@ void IntHandlerXHCI(InterruptFrame* frame) {
   NotifyEndOfInterrupt();
 }
 
+__attribute__((interrupt))
+void IntHandlerAPICTimer(InterruptFrame* frame) {
+  message_queue->push_back(Message{Message::kInterruptLAPICTimer});
+  NotifyEndOfInterrupt();
+}
+
 void InitializeInterrupt(std::deque<Message>* message_queue) {  
   ::message_queue = message_queue;
 
@@ -68,6 +74,12 @@ void InitializeInterrupt(std::deque<Message>* message_queue) {
     idt[InterruptVector::kXHCI], 
     MakeIDTAttr(DescriptorType::kInterruptGate), 
     reinterpret_cast<uint64_t>(IntHandlerXHCI),
+    cs
+  );  
+  SetIDTEntry(
+    idt[InterruptVector::kLAPICTimer],
+    MakeIDTAttr(DescriptorType::kInterruptGate),
+    reinterpret_cast<uint64_t>(IntHandlerAPICTimer),
     cs
   );
   LoadIDT(sizeof(idt) - 1, reinterpret_cast<uint64_t>(&idt[0]));
