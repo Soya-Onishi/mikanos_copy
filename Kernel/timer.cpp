@@ -1,6 +1,9 @@
 #include <cstdint>
+#include <deque>
+
 #include "timer.hpp"
 #include "interrupt.hpp"
+#include "message.hpp"
 
 namespace {
   const uint32_t kCountMax = 0xFFFFFFFFu;
@@ -10,12 +13,36 @@ namespace {
   volatile uint32_t& divide_config = *reinterpret_cast<uint32_t*>(0xFEE003E0u);
 }
 
-void TimerManager::Tick() {
-  tick_++;
+Timer::Timer(unsigned long timeout, int value) : timeout_{timeout}, value_{value} {  
 }
 
-void InitializeAPICTimer() {
-  timer_manager = new TimerManager;
+TimerManager::TimerManager(std::deque<Message>& message_queue) : message_queue_{message_queue} {
+  timers_.push(Timer{std::numeric_limits<unsigned long>::max(), -1});
+}
+
+void TimerManager::Tick() {
+  tick_++;
+  while(true) {
+    const auto& t = timers_.top();
+    if(t.Timeout() > tick_) {
+      break;
+    }
+
+    Message m{Message::kTimerTimeout};
+    m.arg.timer.timeout = t.Timeout();
+    m.arg.timer.value = t.Value();
+    message_queue_.push_back(m);
+
+    timers_.pop();
+  }
+}
+
+void TimerManager::AddTimer(const Timer& timer) {
+  timers_.push(timer);
+}
+
+void InitializeAPICTimer(std::deque<Message>& message_queue) {
+  timer_manager = new TimerManager(message_queue);
 
   divide_config = 0b1011;
   lvt_timer = (0b010 << 16) | InterruptVector::kLAPICTimer;    
