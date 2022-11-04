@@ -9,6 +9,7 @@
 #include <Protocol/DiskIo2.h>
 #include <Protocol/BlockIo.h>
 #include <Guid/FileInfo.h>
+#include <Guid/Acpi.h>
 #include "elf.hpp"
 #include "../Kernel/frame_buffer_config.hpp"
 #include "../Kernel/memory_map.hpp"
@@ -113,7 +114,7 @@ EFI_STATUS EFIAPI UefiMain(
   CopyLoadSegment(kernel_ehdr);
 
   // エントリポイントの設定
-  typedef void ENTRY_POINT(const struct FrameBufferConfig*, const struct MemoryMap*);
+  typedef void ENTRY_POINT(const struct FrameBufferConfig*, const struct MemoryMap*, const VOID*);
   ENTRY_POINT* entry_point = (ENTRY_POINT*)kernel_ehdr->e_entry;
 
   Print(L"Kernel: 0x%0lx (%lu bytes)\n", kernel_base_addr, kernel_file_size);
@@ -154,7 +155,18 @@ EFI_STATUS EFIAPI UefiMain(
     }
   }
 
-  entry_point(&config, &memmap);
+  VOID* acpi_table = NULL;
+  for(UINTN i = 0; i < system_table->NumberOfTableEntries; i++) {
+    if(CompareGuid(
+        &gEfiAcpiTableGuid,
+        &system_table->ConfigurationTable[i].VendorGuid
+    )) {
+      acpi_table = &system_table->ConfigurationTable[i].VendorGuid;      
+      break;
+    }
+  }
+
+  entry_point(&config, &memmap, acpi_table);
 
   Print(L"Exit from kernel (This is fatal)\n");
 

@@ -23,6 +23,7 @@
 #include "memory_manager.hpp"
 #include "layer.hpp"
 #include "timer.hpp"
+#include "acpi.hpp"
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
 #include "usb/classdriver/mouse.hpp"
@@ -143,7 +144,8 @@ unsigned int InitializeMainWindow() {
 
 extern "C" void kernel_main_new_stack(
   const FrameBufferConfig& frame_buffer_config_ref,
-  const MemoryMap& memmap_ref
+  const MemoryMap& memmap_ref,
+  const acpi::RSDP& acpi_table
 ) {    
   __asm__("cli");
 
