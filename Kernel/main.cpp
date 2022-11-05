@@ -39,6 +39,16 @@ void* operator new(size_t size, void* buf) {
 void operator delete(void* obj) noexcept {}
 */
 
+struct TaskContext {
+  uint64_t cr3, rip, rflags, reserved1;
+  uint64_t cs, ss, fs, gs;
+  uint64_t rax, rbx, rcx, rdx, rdi, rsi, rsp, rbp;
+  uint64_t r8, r9, r10, r11, r12, r13, r14, r15;
+  std::array<uint8_t, 512> fxsave_area;
+} __attribute__((packed));
+
+alignas(16) TaskContext task_a_ctx, task_b_ctx;
+
 int printk(const char* fmt, ...);
 
 std::deque<Message>* message_queue;
@@ -204,6 +214,40 @@ void InputTextWindow(Window& window, const unsigned int id, char c) {
   layer_manager->Draw(id);
 }
 
+unsigned int InitializeTaskBWindow() {
+  auto task_b_window = std::make_shared<Window> (
+    160, 52, screen_config.pixel_format
+  );
+  DrawWindow(*task_b_window->Writer(), "TaskB Window");
+
+  auto task_b_window_layer_id = layer_manager->NewLayer()
+    .SetWindow(task_b_window)
+    .SetDraggable(true)
+    .Move({100, 100})
+    .ID();
+
+  layer_manager->UpDown(task_b_window_layer_id, std::numeric_limits<int>::max());
+
+  return task_b_window_layer_id;
+}
+
+void TaskB(int task_id, int data, int layer_id) {
+  printk("TaskB: task_id=%d, data=%d\n", task_id, data);
+  
+  char str[128];
+  int count = 0;
+  const auto window = layer_manager->GetLayer(layer_id).GetWindow();
+  while(true) {
+    count++;
+    sprintf(str, "%10d", count);
+    FillRectangle(*window->Writer(), {24, 28}, {8 * 10, 16}, {0xC6, 0xC6, 0xC6});
+    WriteString(*window->Writer(), {24, 28}, str, {0, 0, 0});
+    layer_manager->Draw(layer_id);
+
+    SwitchContext(&task_a_ctx, &task_b_ctx);
+  }
+}
+
 extern "C" void kernel_main_new_stack(
   const FrameBufferConfig& frame_buffer_config_ref,
   const MemoryMap& memmap_ref,
@@ -238,6 +282,7 @@ extern "C" void kernel_main_new_stack(
   InitializeLayer();
   auto main_window_layer_id = InitializeMainWindow();    
   auto text_window_layer_id = InitializeTextWindow();
+  auto task_b_window_layer_id = InitializeTaskBWindow();
   InitializeMouse();
   layer_manager->Draw({{0, 0}, ScreenSize()});  
   InitializeKeyboard(*message_queue);
@@ -247,6 +292,25 @@ extern "C" void kernel_main_new_stack(
 
   auto main_window_writer = layer_manager->GetLayer(main_window_layer_id).GetWindow()->Writer();
   auto text_window_writer = layer_manager->GetLayer(text_window_layer_id).GetWindow()->Writer();
+
+  std::vector<uint64_t> task_b_stack(1024);
+  uint64_t task_b_stack_end = reinterpret_cast<uint64_t>(&task_b_stack[1024]);
+
+  // タスクBのコンテキストの初期化
+  memset(&task_b_ctx, 0, sizeof(task_b_ctx));
+  task_b_ctx.rip = reinterpret_cast<uint64_t>(TaskB);
+  task_b_ctx.rdi = 1;
+  task_b_ctx.rsi = 42;
+  task_b_ctx.rdx = task_b_window_layer_id;
+  
+  task_b_ctx.cr3 = GetCR3();
+  task_b_ctx.rflags = 0x202;
+  task_b_ctx.cs = kKernelCS;
+  task_b_ctx.ss = kKernelSS;
+  task_b_ctx.rsp = (task_b_stack_end & ~0xFlu) - 8;
+
+  *reinterpret_cast<uint32_t*>(&task_b_ctx.fxsave_area[24]) = 0x1F80;
+
   while(true) {
     __asm__("cli");
     const auto tick = timer_manager->CurrentTick();
@@ -260,7 +324,7 @@ extern "C" void kernel_main_new_stack(
     __asm__("cli");
     if(message_queue->size() == 0) {
       __asm__("sti");      
-      __asm__("hlt");
+      SwitchContext(&task_b_ctx, &task_a_ctx);
       continue;
     }
     

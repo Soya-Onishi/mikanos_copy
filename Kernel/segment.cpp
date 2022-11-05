@@ -58,8 +58,12 @@ void setup_segments() {
 
 void InitializeSegment() {
   setup_segments();
+  
   const uint16_t kernel_cs = 1 << 3;
   const uint64_t kernel_ss = 2 << 3;
+  kKernelCS = kernel_cs;
+  kKernelSS = kernel_ss;
+
   SetDSAll(0);  
   SetCSSS(kernel_cs, kernel_ss);      
 }

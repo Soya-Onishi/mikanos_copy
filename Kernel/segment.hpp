@@ -24,3 +24,6 @@ union SegmentDescriptor {
 } __attribute__((packed));
 
 void InitializeSegment();
+
+inline uint16_t kKernelCS;
+inline uint64_t kKernelSS;
