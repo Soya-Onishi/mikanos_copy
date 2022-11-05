@@ -49,6 +49,8 @@ namespace acpi {
   } __attribute__((packed));
 
   void Initialize(const RSDP& rsdp);
+  void WaitMilliseconds(const unsigned long msec);
 
   inline const FADT* fadt;
+  const uint32_t kPMTimerFreq = 3579545;
 }

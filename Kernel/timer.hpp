@@ -31,6 +31,8 @@ class TimerManager {
 };
 
 inline TimerManager* timer_manager;
+inline unsigned long lapic_timer_freq = 0;
+const int kTimerFreq = 100;
 
 void InitializeAPICTimer(std::deque<Message>& message_queue);
 void StartAPICTimer();

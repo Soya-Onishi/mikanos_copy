@@ -38,6 +38,6 @@ timer.o: timer.cpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__bit_reference \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/climits \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/limits.h \
-  message.hpp interrupt.hpp \
+  message.hpp acpi.hpp interrupt.hpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/array \
   logger.hpp x86_descriptor.hpp

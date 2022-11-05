@@ -7,4 +7,4 @@ acpi.o: acpi.cpp \
   acpi.hpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/cstdint \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/stdint.h \
-  logger.hpp
+  asmfunc.h logger.hpp
