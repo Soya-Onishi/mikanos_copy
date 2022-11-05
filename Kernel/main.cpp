@@ -205,6 +205,7 @@ void InputTextWindow(Window& window, const unsigned int id, char c) {
   layer_manager->Draw(id);
 }
 
+unsigned int task_b_layer_id;
 unsigned int InitializeTaskBWindow() {
   auto task_b_window = std::make_shared<Window> (
     160, 52, screen_config.pixel_format
@@ -218,23 +219,29 @@ unsigned int InitializeTaskBWindow() {
     .ID();
 
   layer_manager->UpDown(task_b_window_layer_id, std::numeric_limits<int>::max());
+  task_b_layer_id = task_b_window_layer_id;
 
   return task_b_window_layer_id;
 }
 
-void TaskB(int task_id, int data, int layer_id) {
+void TaskB(uint64_t task_id, int64_t data) {
   printk("TaskB: task_id=%d, data=%d\n", task_id, data);
   
   char str[128];
   int count = 0;
-  const auto window = layer_manager->GetLayer(layer_id).GetWindow();
+  auto window = layer_manager->GetLayer(task_b_layer_id).GetWindow();
   while(true) {
     count++;
     sprintf(str, "%10d", count);
     FillRectangle(*window->Writer(), {24, 28}, {8 * 10, 16}, {0xC6, 0xC6, 0xC6});
     WriteString(*window->Writer(), {24, 28}, str, {0, 0, 0});
-    layer_manager->Draw(layer_id);    
+    layer_manager->Draw(task_b_layer_id);    
   }
+}
+
+void IdleTask(uint64_t task_id, int64_t data) {
+  printk("TaskIdle: task_id=%lu, data=%lx\n", task_id, data);
+  while(true) __asm__("hlt");
 }
 
 extern "C" void kernel_main_new_stack(
@@ -281,26 +288,11 @@ extern "C" void kernel_main_new_stack(
 
   auto main_window_writer = layer_manager->GetLayer(main_window_layer_id).GetWindow()->Writer();
   auto text_window_writer = layer_manager->GetLayer(text_window_layer_id).GetWindow()->Writer();
-
-  std::vector<uint64_t> task_b_stack(1024);
-  uint64_t task_b_stack_end = reinterpret_cast<uint64_t>(&task_b_stack[1024]);
-
-  // タスクBのコンテキストの初期化
-  memset(&task_b_ctx, 0, sizeof(task_b_ctx));
-  task_b_ctx.rip = reinterpret_cast<uint64_t>(TaskB);
-  task_b_ctx.rdi = 1;
-  task_b_ctx.rsi = 42;
-  task_b_ctx.rdx = task_b_window_layer_id;
   
-  task_b_ctx.cr3 = GetCR3();
-  task_b_ctx.rflags = 0x202;
-  task_b_ctx.cs = kKernelCS;
-  task_b_ctx.ss = kKernelSS;
-  task_b_ctx.rsp = (task_b_stack_end & ~0xFlu) - 8;
-
-  *reinterpret_cast<uint32_t*>(&task_b_ctx.fxsave_area[24]) = 0x1F80;
-
   InitializeTask();
+  task_manager->NewTask().InitContext(TaskB, 45);
+  task_manager->NewTask().InitContext(IdleTask, 0xDEADBEEF);
+  task_manager->NewTask().InitContext(IdleTask, 0xCAFEBABE);
 
   while(true) {
     __asm__("cli");

@@ -88,7 +88,7 @@ void LAPICTimerOnInterrupt() {
   const bool task_timer_timeout = timer_manager->Tick();
   NotifyEndOfInterrupt();
 
-  if(task_timer_timeout) {
-    SwitchTask();
+  if(task_timer_timeout && task_manager != nullptr) {
+    task_manager->SwitchTask();
   }
 }
