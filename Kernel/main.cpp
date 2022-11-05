@@ -177,17 +177,26 @@ unsigned InitializeTextWindow() {
 }
 
 int text_window_index;
+void DrawTextCursor(Window::WindowWriter& writer, bool visible) {
+  const auto color = visible ? 0x000000 : 0xFFFFFF;
+  const auto pos = Vector2D<int>{8 + 8 * text_window_index, 24 + 5};
+
+  FillRectangle(writer, pos, {7, 15}, ToColor(color));
+}
+
 void InputTextWindow(Window& window, const unsigned int id, char c) {
   if(c == 0) {
     return;
   }
 
   auto pos = []() { return Vector2D<int>{8 + 8 * text_window_index, 24 + 6}; };
-  const int max_chars = (text_window->Width() - 16) / 8;
+  const int max_chars = (text_window->Width() - 16) / 8 - 1;
   if(c == '\b' && text_window_index > 0) {
+    DrawTextCursor(*window.Writer(), false);
     text_window_index--;
     FillRectangle(*window.Writer(), pos(), {8, 16}, ToColor(0xFFFFFF));
   } else if(c >= ' ' && text_window_index < max_chars) {
+    DrawTextCursor(*window.Writer(), false);
     WriteAscii(*window.Writer(), pos(), c, ToColor(0x000000));
     text_window_index++;
   } 
@@ -219,8 +228,12 @@ extern "C" void kernel_main_new_stack(
 
   acpi::Initialize(acpi_table);
   InitializeAPICTimer(*message_queue);
+  const int kTextboxCursorTime = 1;
+  const int kTimer05Sec = static_cast<int>(kTimerFreq * 0.5);
+  bool text_cursor_visible = false;  
+  timer_manager->AddTimer(Timer{kTimer05Sec, kTextboxCursorTime});
 
-  __asm__("sti");
+  __asm__("sti");  
 
   InitializeLayer();
   auto main_window_layer_id = InitializeMainWindow();    
@@ -259,11 +272,16 @@ extern "C" void kernel_main_new_stack(
       case Message::kInterruptXHCI:
         usb::xhci::ProcessEvents();        
         break;     
-      case Message::kTimerTimeout:
-        printk("Timer: timeout = %lu, value = %d\n", msg.arg.timer.timeout, msg.arg.timer.value);
-        if(msg.arg.timer.value > 0) {
-          timer_manager->AddTimer(Timer{msg.arg.timer.timeout + 100, msg.arg.timer.value + 1});
+      case Message::kTimerTimeout:        
+        if(msg.arg.timer.value == kTextboxCursorTime) {
+          __asm__("cli");
+          timer_manager->AddTimer(Timer{msg.arg.timer.timeout + kTimer05Sec, kTextboxCursorTime});
+          __asm__("sti");
+          text_cursor_visible = !text_cursor_visible;
+          DrawTextCursor(*text_window_writer, text_cursor_visible);
+          layer_manager->Draw(text_window_layer_id);
         }
+        
         break;
       case Message::kKeyPush:
         InputTextWindow(*text_window, text_window_layer_id, msg.arg.keyboard.ascii);
