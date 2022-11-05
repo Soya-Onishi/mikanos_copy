@@ -21,7 +21,7 @@ class TimerManager {
   public:
     TimerManager(std::deque<Message>& message_queue);
     void AddTimer(const Timer& timer);
-    void Tick();
+    bool Tick();
     unsigned long CurrentTick() const { return tick_; }    
 
   private:
@@ -33,6 +33,9 @@ class TimerManager {
 inline TimerManager* timer_manager;
 inline unsigned long lapic_timer_freq = 0;
 const int kTimerFreq = 100;
+
+const int kTaskTimerPeriod = static_cast<int>(kTimerFreq * 0.02);
+const int kTaskTimerValue = std::numeric_limits<int>::min();
 
 void InitializeAPICTimer(std::deque<Message>& message_queue);
 void StartAPICTimer();

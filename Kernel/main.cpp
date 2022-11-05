@@ -25,6 +25,7 @@
 #include "timer.hpp"
 #include "acpi.hpp"
 #include "keyboard.hpp"
+#include "task.hpp"
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
 #include "usb/classdriver/mouse.hpp"
@@ -38,16 +39,6 @@ void* operator new(size_t size, void* buf) {
 
 void operator delete(void* obj) noexcept {}
 */
-
-struct TaskContext {
-  uint64_t cr3, rip, rflags, reserved1;
-  uint64_t cs, ss, fs, gs;
-  uint64_t rax, rbx, rcx, rdx, rdi, rsi, rsp, rbp;
-  uint64_t r8, r9, r10, r11, r12, r13, r14, r15;
-  std::array<uint8_t, 512> fxsave_area;
-} __attribute__((packed));
-
-alignas(16) TaskContext task_a_ctx, task_b_ctx;
 
 int printk(const char* fmt, ...);
 
@@ -242,9 +233,7 @@ void TaskB(int task_id, int data, int layer_id) {
     sprintf(str, "%10d", count);
     FillRectangle(*window->Writer(), {24, 28}, {8 * 10, 16}, {0xC6, 0xC6, 0xC6});
     WriteString(*window->Writer(), {24, 28}, str, {0, 0, 0});
-    layer_manager->Draw(layer_id);
-
-    SwitchContext(&task_a_ctx, &task_b_ctx);
+    layer_manager->Draw(layer_id);    
   }
 }
 
@@ -311,6 +300,8 @@ extern "C" void kernel_main_new_stack(
 
   *reinterpret_cast<uint32_t*>(&task_b_ctx.fxsave_area[24]) = 0x1F80;
 
+  InitializeTask();
+
   while(true) {
     __asm__("cli");
     const auto tick = timer_manager->CurrentTick();
@@ -324,7 +315,7 @@ extern "C" void kernel_main_new_stack(
     __asm__("cli");
     if(message_queue->size() == 0) {
       __asm__("sti");      
-      SwitchContext(&task_b_ctx, &task_a_ctx);
+      __asm__("hlt");
       continue;
     }
     
