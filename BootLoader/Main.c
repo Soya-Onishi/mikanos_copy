@@ -161,7 +161,7 @@ EFI_STATUS EFIAPI UefiMain(
         &gEfiAcpiTableGuid,
         &system_table->ConfigurationTable[i].VendorGuid
     )) {
-      acpi_table = &system_table->ConfigurationTable[i].VendorGuid;      
+      acpi_table = system_table->ConfigurationTable[i].VendorTable;
       break;
     }
   }

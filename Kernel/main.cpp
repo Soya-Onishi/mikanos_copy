@@ -164,6 +164,7 @@ extern "C" void kernel_main_new_stack(
   InitializePCI();
   usb::xhci::Initialize();    
 
+  acpi::Initialize(acpi_table);
   InitializeAPICTimer(*message_queue);
   timer_manager->AddTimer(Timer{200, 2});
   timer_manager->AddTimer(Timer{600, -1});
