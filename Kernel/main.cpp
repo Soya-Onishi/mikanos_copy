@@ -143,6 +143,58 @@ unsigned int InitializeMainWindow() {
   return main_window_layer_id;
 }
 
+void DrawTextBox(PixelWriter& writer, Vector2D<int> pos, Vector2D<int> size) {
+  auto fill_rect = 
+    [&writer](Vector2D<int> pos, Vector2D<int> size, uint32_t c) {
+      FillRectangle(writer, pos, size, ToColor(c));
+    };
+
+  fill_rect(pos + Vector2D<int>{1, 2}, size - Vector2D<int>{2, 2}, 0xFFFFFF);
+  fill_rect(pos,                       {size.x, 1},                0x848484);
+  fill_rect(pos, {1, size.y}, 0x848484);
+  fill_rect(pos + Vector2D<int>{0, size.y}, {size.x, 1}, 0xc6c6c6);
+  fill_rect(pos + Vector2D<int>{size.x, 0}, {1, size.y}, 0xc6c6c6);
+}
+
+std::shared_ptr<Window> text_window;
+unsigned InitializeTextWindow() {
+  const int win_w = 160;
+  const int win_h = 52;
+
+  text_window = std::make_shared<Window>(win_w, win_h, screen_config.pixel_format);
+  DrawWindow(*text_window->Writer(), "Text Box Test");
+  DrawTextBox(*text_window->Writer(), {4, 24}, {win_w - 8, win_h - 24 - 4});
+
+  auto text_window_layer_id = layer_manager->NewLayer()
+    .SetWindow(text_window)
+    .SetDraggable(true)
+    .Move({350, 200})
+    .ID();
+
+  layer_manager->UpDown(text_window_layer_id, std::numeric_limits<int>::max());
+
+  return text_window_layer_id;
+}
+
+int text_window_index;
+void InputTextWindow(Window& window, const unsigned int id, char c) {
+  if(c == 0) {
+    return;
+  }
+
+  auto pos = []() { return Vector2D<int>{8 + 8 * text_window_index, 24 + 6}; };
+  const int max_chars = (text_window->Width() - 16) / 8;
+  if(c == '\b' && text_window_index > 0) {
+    text_window_index--;
+    FillRectangle(*window.Writer(), pos(), {8, 16}, ToColor(0xFFFFFF));
+  } else if(c >= ' ' && text_window_index < max_chars) {
+    WriteAscii(*window.Writer(), pos(), c, ToColor(0x000000));
+    text_window_index++;
+  } 
+
+  layer_manager->Draw(id);
+}
+
 extern "C" void kernel_main_new_stack(
   const FrameBufferConfig& frame_buffer_config_ref,
   const MemoryMap& memmap_ref,
@@ -172,6 +224,7 @@ extern "C" void kernel_main_new_stack(
 
   InitializeLayer();
   auto main_window_layer_id = InitializeMainWindow();    
+  auto text_window_layer_id = InitializeTextWindow();
   InitializeMouse();
   layer_manager->Draw({{0, 0}, ScreenSize()});  
   InitializeKeyboard(*message_queue);
@@ -180,6 +233,7 @@ extern "C" void kernel_main_new_stack(
   char counter_str[128];
 
   auto main_window_writer = layer_manager->GetLayer(main_window_layer_id).GetWindow()->Writer();
+  auto text_window_writer = layer_manager->GetLayer(text_window_layer_id).GetWindow()->Writer();
   while(true) {
     __asm__("cli");
     const auto tick = timer_manager->CurrentTick();
@@ -212,9 +266,7 @@ extern "C" void kernel_main_new_stack(
         }
         break;
       case Message::kKeyPush:
-        if(msg.arg.keyboard.ascii != 0) {
-          printk("%c", msg.arg.keyboard.ascii);
-        }
+        InputTextWindow(*text_window, text_window_layer_id, msg.arg.keyboard.ascii);
         break;
       default:
         Log(kError, "Unknown message type: %d\n", msg.type);
