@@ -24,6 +24,7 @@
 #include "layer.hpp"
 #include "timer.hpp"
 #include "acpi.hpp"
+#include "keyboard.hpp"
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
 #include "usb/classdriver/mouse.hpp"
@@ -166,8 +167,6 @@ extern "C" void kernel_main_new_stack(
 
   acpi::Initialize(acpi_table);
   InitializeAPICTimer(*message_queue);
-  timer_manager->AddTimer(Timer{200, 2});
-  timer_manager->AddTimer(Timer{600, -1});
 
   __asm__("sti");
 
@@ -175,6 +174,7 @@ extern "C" void kernel_main_new_stack(
   auto main_window_layer_id = InitializeMainWindow();    
   InitializeMouse();
   layer_manager->Draw({{0, 0}, ScreenSize()});  
+  InitializeKeyboard(*message_queue);
 
   unsigned int count = 0;
   char counter_str[128];
@@ -209,6 +209,11 @@ extern "C" void kernel_main_new_stack(
         printk("Timer: timeout = %lu, value = %d\n", msg.arg.timer.timeout, msg.arg.timer.value);
         if(msg.arg.timer.value > 0) {
           timer_manager->AddTimer(Timer{msg.arg.timer.timeout + 100, msg.arg.timer.value + 1});
+        }
+        break;
+      case Message::kKeyPush:
+        if(msg.arg.keyboard.ascii != 0) {
+          printk("%c", msg.arg.keyboard.ascii);
         }
         break;
       default:
