@@ -13,7 +13,8 @@ struct Message {
     } timer;
     struct {
       uint8_t keycode;
-      char ascii;
+      uint8_t modifier;
+      char ascii;      
     } keyboard;
   } arg;
 };
