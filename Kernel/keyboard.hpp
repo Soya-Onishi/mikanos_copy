@@ -36,4 +36,4 @@ const char keycode_map_shifted[256] = {
     '8', '9', '0', '.', '\\', 0, 0, '=',        // 96
 };
 
-void InitializeKeyboard(std::deque<Message> &message_queue);
+void InitializeKeyboard();

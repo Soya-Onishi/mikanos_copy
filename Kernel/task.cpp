@@ -1,7 +1,10 @@
+#include <optional>
+
 #include "task.hpp"
 #include "timer.hpp"
 #include "segment.hpp"
 #include "error.hpp"
+#include "logger.hpp"
 #include "asmfunc.h"
 
 void InitializeTask() {
@@ -54,6 +57,21 @@ Task& Task::Wakeup() {
   return *this;
 }
 
+void Task::SendMessage(const Message& message) {  
+  messages_.push_back(message);    
+  Wakeup();
+}
+
+std::optional<Message> Task::ReceiveMessage() {  
+  if(messages_.empty()) {    
+    return std::nullopt;
+  }  
+
+  auto m = messages_.front();
+  messages_.pop_front();
+  return m;
+}
+
 TaskManager::TaskManager() {
   running_.push_back(&NewTask());
 }
@@ -61,6 +79,10 @@ TaskManager::TaskManager() {
 Task& TaskManager::NewTask() {
   latest_id_++;
   return *tasks_.emplace_back(new Task{latest_id_});
+}
+
+Task& TaskManager::CurrentTask() {
+  return *running_.front();
 }
 
 void TaskManager::SwitchTask(bool current_sleep) {
@@ -73,6 +95,17 @@ void TaskManager::SwitchTask(bool current_sleep) {
   Task* next_task = running_.front();
 
   SwitchContext(&next_task->Context(), &current_task->Context());  
+}
+
+Error TaskManager::SendMessage(uint64_t id, const Message& message) {
+  auto it = std::find_if(tasks_.begin(), tasks_.end(), [id](const auto& task) { return task->ID() == id; });
+  
+  if(it == tasks_.end()) {
+    return MAKE_ERROR(Error::kNoSuchTask);
+  }
+
+  (*it)->SendMessage(message);
+  return MAKE_ERROR(Error::kSuccess);
 }
 
 void TaskManager::Sleep(Task* task) {

@@ -6,6 +6,7 @@
 #include "message.hpp"
 #include "asmfunc.h"
 #include "timer.hpp"
+#include "task.hpp"
 
 #include "pci.hpp"
 #include "usb/memory.hpp"
@@ -13,10 +14,6 @@
 #include "usb/classdriver/mouse.hpp"
 #include "usb/xhci/xhci.hpp"
 #include "usb/xhci/trb.hpp"
-
-namespace {
-  std::deque<Message>* message_queue;
-}
 
 void SetIDTEntry(
   InterruptDescriptor& desc,
@@ -56,7 +53,7 @@ void NotifyEndOfInterrupt() {
 
 __attribute__((interrupt))
 void IntHandlerXHCI(InterruptFrame* frame) {
-  message_queue->push_back(Message{Message::kInterruptXHCI});
+  task_manager->SendMessage(1, Message{Message::kInterruptXHCI});  
   NotifyEndOfInterrupt();
 }
 
@@ -66,9 +63,7 @@ void IntHandlerAPICTimer(InterruptFrame* frame) {
   NotifyEndOfInterrupt();
 }
 
-void InitializeInterrupt(std::deque<Message>* message_queue) {  
-  ::message_queue = message_queue;
-
+void InitializeInterrupt() {  
   const uint16_t cs = GetCS();
   // const uint64_t offset = reinterpret_cast<uint64_t>(IntHandlerXHCI);
   SetIDTEntry(

@@ -5,6 +5,7 @@
 #include "acpi.hpp"
 #include "interrupt.hpp"
 #include "message.hpp"
+#include "logger.hpp"
 #include "task.hpp"
 
 namespace {
@@ -18,7 +19,7 @@ namespace {
 Timer::Timer(unsigned long timeout, int value) : timeout_{timeout}, value_{value} {  
 }
 
-TimerManager::TimerManager(std::deque<Message>& message_queue) : message_queue_{message_queue} {
+TimerManager::TimerManager() {
   timers_.push(Timer{std::numeric_limits<unsigned long>::max(), -1});
 }
 
@@ -31,18 +32,19 @@ bool TimerManager::Tick() {
     if(t.Timeout() > tick_) {
       break;
     }
-
+  
     if(t.Value() == kTaskTimerValue) {
       task_timer_timeout = true;
       timers_.pop();
       timers_.push(Timer{tick_ + kTaskTimerPeriod, kTaskTimerValue});
       break;
     }
-
+  
     Message m{Message::kTimerTimeout};
     m.arg.timer.timeout = t.Timeout();
-    m.arg.timer.value = t.Value();
-    message_queue_.push_back(m);
+    m.arg.timer.value = t.Value();        
+
+    task_manager->SendMessage(1, m);
 
     timers_.pop();
   }
@@ -54,8 +56,8 @@ void TimerManager::AddTimer(const Timer& timer) {
   timers_.push(timer);
 }
 
-void InitializeAPICTimer(std::deque<Message>& message_queue) {
-  timer_manager = new TimerManager(message_queue);
+void InitializeAPICTimer() {
+  timer_manager = new TimerManager();
 
   divide_config = 0b1011;
   lvt_timer = (0b010 << 16) | InterruptVector::kLAPICTimer;    

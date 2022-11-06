@@ -32,19 +32,18 @@ keyboard.o: keyboard.cpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/_ansi.h \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/functional \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/bit \
-  keyboard.hpp message.hpp usb/memory.hpp usb/device.hpp \
-  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/array \
-  error.hpp \
-  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/cstdio \
-  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/stdio.h \
-  usb/setupdata.hpp usb/endpoint.hpp usb/arraymap.hpp \
-  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/optional \
-  usb/classdriver/keyboard.hpp usb/classdriver/hid.hpp \
-  usb/classdriver/base.hpp usb/xhci/xhci.hpp usb/xhci/registers.hpp \
-  register.hpp usb/xhci/context.hpp usb/xhci/ring.hpp \
+  keyboard.hpp message.hpp task.hpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/vector \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__bit_reference \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/climits \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/limits.h \
-  usb/xhci/trb.hpp usb/xhci/port.hpp usb/xhci/devmgr.hpp \
-  usb/xhci/device.hpp
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/array \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/optional \
+  error.hpp \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/cstdio \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/stdio.h \
+  usb/memory.hpp usb/device.hpp usb/setupdata.hpp usb/endpoint.hpp \
+  usb/arraymap.hpp usb/classdriver/keyboard.hpp usb/classdriver/hid.hpp \
+  usb/classdriver/base.hpp usb/xhci/xhci.hpp usb/xhci/registers.hpp \
+  register.hpp usb/xhci/context.hpp usb/xhci/ring.hpp usb/xhci/trb.hpp \
+  usb/xhci/port.hpp usb/xhci/devmgr.hpp usb/xhci/device.hpp

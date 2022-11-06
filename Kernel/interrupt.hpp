@@ -63,4 +63,4 @@ struct InterruptFrame {
   uint64_t ss;
 };
 
-void InitializeInterrupt(std::deque<Message>* message_queue);
+void InitializeInterrupt();

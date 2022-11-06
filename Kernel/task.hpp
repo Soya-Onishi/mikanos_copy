@@ -4,7 +4,9 @@
 #include <vector>
 #include <array>
 #include <deque>
+#include <optional>
 
+#include "message.hpp"
 #include "error.hpp"
 
 using TaskFunc = void (uint64_t, int64_t);
@@ -26,11 +28,14 @@ class Task {
     uint64_t ID() const;
     Task& Sleep();
     Task& Wakeup();
+    void SendMessage(const Message& message);
+    std::optional<Message> ReceiveMessage();
 
   private:
     uint64_t id_;
     std::vector<uint64_t> stack_;
     alignas(16) TaskContext context_;
+    std::deque<Message> messages_{};
 };
 
 class TaskManager {
@@ -38,6 +43,9 @@ class TaskManager {
     TaskManager();
     Task& NewTask();
     void SwitchTask(bool current_sleep = false);
+    Task& CurrentTask();
+
+    Error SendMessage(uint64_t id, const Message& message);    
 
     void Sleep(Task* task);
     Error Sleep(uint64_t id);

@@ -42,8 +42,6 @@ void operator delete(void* obj) noexcept {}
 
 int printk(const char* fmt, ...);
 
-std::deque<Message>* message_queue;
-
 alignas(16) uint8_t kernel_main_stack[1024 * 1024];
 
 inline void halt() {
@@ -260,29 +258,23 @@ extern "C" void kernel_main_new_stack(
   InitializeSegment();
   InitializePagetable();
   InitializeMemoryManager(memmap);    
-  
-  ::message_queue = new std::deque<Message>(32);
-  InitializeInterrupt(::message_queue);
+    
+  InitializeInterrupt();
   InitializePCI();
-  usb::xhci::Initialize();    
-
+  
   acpi::Initialize(acpi_table);
-  InitializeAPICTimer(*message_queue);
+  InitializeAPICTimer();
   const int kTextboxCursorTime = 1;
   const int kTimer05Sec = static_cast<int>(kTimerFreq * 0.5);
   bool text_cursor_visible = false;  
   timer_manager->AddTimer(Timer{kTimer05Sec, kTextboxCursorTime});
-
-  __asm__("sti");  
-
+  
   InitializeLayer();
   auto main_window_layer_id = InitializeMainWindow();    
   auto text_window_layer_id = InitializeTextWindow();
-  auto task_b_window_layer_id = InitializeTaskBWindow();
-  InitializeMouse();
+  auto task_b_window_layer_id = InitializeTaskBWindow();  
   layer_manager->Draw({{0, 0}, ScreenSize()});  
-  InitializeKeyboard(*message_queue);
-
+  
   unsigned int count = 0;
   char counter_str[128];
 
@@ -290,38 +282,44 @@ extern "C" void kernel_main_new_stack(
   auto text_window_writer = layer_manager->GetLayer(text_window_layer_id).GetWindow()->Writer();
   
   InitializeTask();
+  Task& main_task = task_manager->CurrentTask();
   auto task_b = task_manager->NewTask().InitContext(TaskB, 45).Wakeup();
   task_manager->NewTask().InitContext(IdleTask, 0xDEADBEEF).Wakeup();
   task_manager->NewTask().InitContext(IdleTask, 0xCAFEBABE).Wakeup();
 
+  usb::xhci::Initialize();    
+  InitializeMouse();
+  InitializeKeyboard();
+
+  __asm__("sti");  
+
   while(true) {
     __asm__("cli");
-    const auto tick = timer_manager->CurrentTick();
+    const auto tick = timer_manager->CurrentTick();    
     __asm__("sti");
     
     sprintf(counter_str, "0x%08X", tick);    
     FillRectangle(*main_window_writer, {24, 28}, {8 * 10, 16}, ToColor(0xC6C6C6));
     WriteString(*main_window_writer, {24, 28}, counter_str, ToColor(0x000000));
     layer_manager->Draw(main_window_layer_id);
-
+    
     __asm__("cli");
-    if(message_queue->size() == 0) {
-      __asm__("sti");      
-      __asm__("hlt");
+    auto msg_opt = main_task.ReceiveMessage();
+    if(!msg_opt.has_value()) {
+      main_task.Sleep();      
+      __asm__("sti");
       continue;
     }
     
-    Message msg = message_queue->front();
-    message_queue->pop_front();    
-
+    auto msg = msg_opt.value();    
     __asm__("sti");
     switch(msg.type) {
       case Message::kInterruptXHCI:
         usb::xhci::ProcessEvents();        
         break;     
-      case Message::kTimerTimeout:        
-        if(msg.arg.timer.value == kTextboxCursorTime) {
-          __asm__("cli");
+      case Message::kTimerTimeout:                
+        if(msg.arg.timer.value == kTextboxCursorTime) {          
+          __asm__("cli");          
           timer_manager->AddTimer(Timer{msg.arg.timer.timeout + kTimer05Sec, kTextboxCursorTime});
           __asm__("sti");
           text_cursor_visible = !text_cursor_visible;
