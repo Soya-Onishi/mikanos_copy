@@ -290,9 +290,9 @@ extern "C" void kernel_main_new_stack(
   auto text_window_writer = layer_manager->GetLayer(text_window_layer_id).GetWindow()->Writer();
   
   InitializeTask();
-  task_manager->NewTask().InitContext(TaskB, 45);
-  task_manager->NewTask().InitContext(IdleTask, 0xDEADBEEF);
-  task_manager->NewTask().InitContext(IdleTask, 0xCAFEBABE);
+  auto task_b = task_manager->NewTask().InitContext(TaskB, 45).Wakeup();
+  task_manager->NewTask().InitContext(IdleTask, 0xDEADBEEF).Wakeup();
+  task_manager->NewTask().InitContext(IdleTask, 0xCAFEBABE).Wakeup();
 
   while(true) {
     __asm__("cli");
@@ -332,6 +332,16 @@ extern "C" void kernel_main_new_stack(
         break;
       case Message::kKeyPush:
         InputTextWindow(*text_window, text_window_layer_id, msg.arg.keyboard.ascii);
+        switch(msg.arg.keyboard.ascii) {
+          case 's':
+            printk("sleep taskB: %s\n", task_manager->Sleep(task_b.ID()).Name());
+            break;
+          case 'w':
+            printk("wakeup taskB: %s\n", task_manager->Wakeup(task_b.ID()).Name());
+            break;
+          default:
+            break;
+        }
         break;
       default:
         Log(kError, "Unknown message type: %d\n", msg.type);
