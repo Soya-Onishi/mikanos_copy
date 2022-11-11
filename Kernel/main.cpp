@@ -284,8 +284,6 @@ extern "C" void kernel_main_new_stack(
   InitializeTask();
   Task& main_task = task_manager->CurrentTask();
   auto task_b = task_manager->NewTask().InitContext(TaskB, 45).Wakeup();
-  task_manager->NewTask().InitContext(IdleTask, 0xDEADBEEF).Wakeup();
-  task_manager->NewTask().InitContext(IdleTask, 0xCAFEBABE).Wakeup();
 
   usb::xhci::Initialize();    
   InitializeMouse();
