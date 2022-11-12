@@ -21,6 +21,8 @@ Terminal::Terminal() {
     .SetWindow(window_)
     .SetDraggable(true)
     .ID();
+
+  Print("> ");
 }
 
 Rectangle<int> Terminal::BlinkCursor() {
@@ -55,12 +57,14 @@ Rectangle<int> Terminal::InputKey(uint8_t modifier, uint8_t keycode, char ascii)
       linebuf_[linebuf_index_] = 0;
       linebuf_index_ = 0;
       cursor_.x = 0;
-      Log(kWarn, "line: %s\n", &linebuf_[0]);
       if(cursor_.y < kRows - 1) {
         cursor_.y++;
       } else {
         Scroll_OneLine();
       }
+
+      ExecuteLine();
+      Print("> ");
 
       draw_area.pos = ToplevelWindow::kTopLeftMargin;
       draw_area.size = window_->InnerSize();
@@ -100,6 +104,54 @@ void Terminal::Scroll_OneLine() {
   FillRectangle(*window_->InnerWriter(), {4, cursor_.y * 16 + 4}, {kColumns * 8, 16}, ToColor(0x000000));
 }
 
+void Terminal::Print(const char* s) {
+  DrawCursor(false);
+
+  auto newline = [this]() {
+    cursor_.x = 0;
+    if(cursor_.y < kRows - 1) {
+      ++cursor_.y;
+    } else {
+      this->Scroll_OneLine();
+    }
+  };
+
+  while(*s) {
+    if(*s == '\n') {
+      newline();
+    } else {
+      WriteAscii(*window_->InnerWriter(), CalcCursorPos(), *s, ToColor(0xFFFFFF));
+      if(cursor_.x == kColumns - 1) {
+        newline();
+      } else {
+        cursor_.x++;
+      }
+    }
+    s++;
+  }
+
+  DrawCursor(true);
+}
+
+void Terminal::ExecuteLine() {
+  char* command = &linebuf_[0];
+  char* first_arg = strchr(&linebuf_[0], ' ');
+  if(first_arg) {
+    *first_arg = 0;
+    first_arg++;
+  } 
+
+  if(strcmp(command, "echo") == 0) {
+    if(first_arg) {
+      Print(first_arg);
+    }
+    Print("\n");
+  } else {
+    Print("command not found: ");
+    Print(command);
+    Print("\n");
+  }
+}
 Message MakeLayerMessage(uint64_t task_id, unsigned int layer_id, LayerOperation op, Rectangle<int> area) {
   Message msg{Message::kLayer, task_id};
   msg.arg.layer.layer_id = layer_id;
