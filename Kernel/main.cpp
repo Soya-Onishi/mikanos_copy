@@ -159,65 +159,6 @@ void InputTextWindow(ToplevelWindow& window, const unsigned int id, char c) {
   layer_manager->Draw(id);
 }
 
-unsigned int task_b_layer_id;
-unsigned int InitializeTaskBWindow() {
-  auto task_b_window = std::make_shared<ToplevelWindow> (
-    160, 52, screen_config.pixel_format, "TaskB Window"
-  );
-
-  auto task_b_window_layer_id = layer_manager->NewLayer()
-    .SetWindow(task_b_window)
-    .SetDraggable(true)
-    .Move({100, 100})
-    .ID();
-
-  layer_manager->UpDown(task_b_window_layer_id, std::numeric_limits<int>::max());
-  task_b_layer_id = task_b_window_layer_id;
-
-  return task_b_window_layer_id;
-}
-
-void TaskB(uint64_t task_id, int64_t data) {
-  printk("TaskB: task_id=%d, data=%d\n", task_id, data);
-  
-  char str[128];
-  int count = 0;
-  auto window = layer_manager->GetLayer(task_b_layer_id).GetWindow();
-
-  __asm__("cli");
-  Task& task = task_manager->CurrentTask();
-  __asm__("sti");
-
-  while(true) {
-    count++;
-    sprintf(str, "%10d", count);
-    FillRectangle(*window->Writer(), {24, 28}, {8 * 10, 16}, {0xC6, 0xC6, 0xC6});
-    WriteString(*window->Writer(), {24, 28}, str, {0, 0, 0});
-
-    Message msg{Message::kLayer, task_id};
-    msg.arg.layer.layer_id = task_b_layer_id;
-    msg.arg.layer.op = LayerOperation::Draw;
-
-    __asm__("cli");
-    task_manager->SendMessage(1, msg);
-    __asm__("sti");
-
-    while(true) {
-      __asm__("cli");
-      auto msg = task.ReceiveMessage();
-      if(!msg) {
-        task.Sleep();
-        __asm__("sti");
-        continue;
-      }
-
-      if(msg->type == Message::kLayerFinish) {
-        break;
-      }
-    }
-  }
-}
-
 void IdleTask(uint64_t task_id, int64_t data) {
   printk("TaskIdle: task_id=%lu, data=%lx\n", task_id, data);
   while(true) __asm__("hlt");
@@ -253,7 +194,6 @@ extern "C" void kernel_main_new_stack(
   InitializeLayer();
   auto main_window_layer_id = InitializeMainWindow();    
   auto text_window_layer_id = InitializeTextWindow();
-  auto task_b_window_layer_id = InitializeTaskBWindow();  
   layer_manager->Draw({{0, 0}, ScreenSize()});  
   
   unsigned int count = 0;
@@ -264,7 +204,6 @@ extern "C" void kernel_main_new_stack(
   
   InitializeTask();
   Task& main_task = task_manager->CurrentTask();
-  Task& task_b = task_manager->NewTask().InitContext(TaskB, 45).Wakeup();
   const uint64_t task_terminal_id = task_manager->NewTask().InitContext(TaskTerminal, 0).Wakeup().ID();
 
   layer_task_map = new std::map<unsigned int, uint64_t>();
@@ -316,15 +255,6 @@ extern "C" void kernel_main_new_stack(
       case Message::kKeyPush:
         if(auto active = active_layer->GetActive(); active == text_window_layer_id) {
           InputTextWindow(*text_window, text_window_layer_id, msg.arg.keyboard.ascii);
-        } else if(active == task_b_window_layer_id) {
-          switch(msg.arg.keyboard.ascii) {
-            case 's':
-              printk("sleep taskB: %s\n", task_manager->Sleep(task_b.ID()).Name());
-              break;
-            case 'w':
-              printk("wakeup taskB: %s\n", task_manager->Wakeup(task_b.ID()).Name());
-              break;
-          }
         } else {
           __asm__("cli");
           auto task_it = layer_task_map->find(active);
