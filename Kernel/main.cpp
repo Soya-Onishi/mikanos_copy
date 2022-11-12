@@ -26,6 +26,7 @@
 #include "acpi.hpp"
 #include "keyboard.hpp"
 #include "task.hpp"
+#include "terminal.hpp"
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
 #include "usb/classdriver/mouse.hpp"
@@ -109,18 +110,7 @@ unsigned int InitializeMainWindow() {
   return main_window_layer_id;
 }
 
-void DrawTextBox(PixelWriter& writer, Vector2D<int> pos, Vector2D<int> size) {
-  auto fill_rect = 
-    [&writer](Vector2D<int> pos, Vector2D<int> size, uint32_t c) {
-      FillRectangle(writer, pos, size, ToColor(c));
-    };
 
-  fill_rect(pos + Vector2D<int>{1, 2}, size - Vector2D<int>{2, 2}, 0xFFFFFF);
-  fill_rect(pos,                       {size.x, 1},                0x848484);
-  fill_rect(pos, {1, size.y}, 0x848484);
-  fill_rect(pos + Vector2D<int>{0, size.y}, {size.x, 1}, 0xc6c6c6);
-  fill_rect(pos + Vector2D<int>{size.x, 0}, {1, size.y}, 0xc6c6c6);
-}
 
 std::shared_ptr<ToplevelWindow> text_window;
 unsigned InitializeTextWindow() {
@@ -275,6 +265,7 @@ extern "C" void kernel_main_new_stack(
   InitializeTask();
   Task& main_task = task_manager->CurrentTask();
   Task& task_b = task_manager->NewTask().InitContext(TaskB, 45).Wakeup();
+  const uint64_t task_terminal_id = task_manager->NewTask().InitContext(TaskTerminal, 0).Wakeup().ID();
 
   usb::xhci::Initialize();    
   InitializeMouse();
@@ -313,6 +304,10 @@ extern "C" void kernel_main_new_stack(
           text_cursor_visible = !text_cursor_visible;
           DrawTextCursor(text_cursor_visible);
           layer_manager->Draw(text_window_layer_id);
+
+          __asm__("cli");
+          task_manager->SendMessage(task_terminal_id, msg);
+          __asm__("sti");
         }
         
         break;
