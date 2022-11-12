@@ -2,7 +2,7 @@
 
 #include <memory>
 #include <map>
-#include <vector>
+#include <vector> 
 
 #include "graphics.hpp"
 #include "window.hpp"
@@ -71,6 +71,7 @@ class ActiveLayer {
 
 inline LayerManager* layer_manager;
 inline ActiveLayer* active_layer;
+inline std::map<unsigned int, uint64_t>* layer_task_map;
 
 void InitializeLayer();
 void ProcessLayerMessage(const Message& message);
