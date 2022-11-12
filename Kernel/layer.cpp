@@ -108,12 +108,22 @@ void LayerManager::Draw(const Rectangle<int>& area) const {
 }
 
 void LayerManager::Draw(unsigned int id) const {
+  Draw(id, {{0, 0}, {-1, -1}});
+}
+
+void LayerManager::Draw(unsigned int id, Rectangle<int> area) const {
   bool draw = false;
-  Rectangle<int> window_area;  
+  Rectangle<int> window_area;
   for(auto layer : layer_stack_) {
     if(layer->ID() == id) {
       window_area.size = layer->GetWindow()->Size();
-      window_area.pos  = layer->GetPosition();
+      window_area.pos = layer->GetPosition();
+      
+      if(area.size.x >= 0 || area.size.y >= 0) {
+        area.pos = area.pos + window_area.pos;
+        window_area = window_area & area;
+      }
+      
       draw = true;
     }
 
@@ -121,7 +131,6 @@ void LayerManager::Draw(unsigned int id) const {
       layer->DrawTo(back_buffer_, window_area);
     }
   }
-
   screen_->Copy(window_area.pos, back_buffer_, window_area);
 }
 
@@ -278,5 +287,8 @@ void ProcessLayerMessage(const Message& msg) {
     case LayerOperation::Draw:
       layer_manager->Draw(arg.layer_id);
       break; 
+    case LayerOperation::DrawArea:
+      layer_manager->Draw(arg.layer_id, {{arg.x, arg.y}, {arg.w, arg.h}});
+      break;
   }
 }

@@ -4,6 +4,7 @@
 #include "window.hpp"
 #include "layer.hpp"
 #include "task.hpp"
+#include "logger.hpp"
 
 Terminal::Terminal() {
   window_ = std::make_shared<ToplevelWindow>(
@@ -21,15 +22,34 @@ Terminal::Terminal() {
     .ID();
 }
 
-void Terminal::BlinkCursor() {
+Rectangle<int> Terminal::BlinkCursor() {
   cursor_visible_ = !cursor_visible_;
-  DrawCursor(cursor_visible_);
+  auto inner_area = DrawCursor(cursor_visible_); 
+  auto window_area = Rectangle<int>{inner_area.pos + ToplevelWindow::kTopLeftMargin, inner_area.size};
+
+  return window_area;
 }
 
-void Terminal::DrawCursor(bool visible) {
+Rectangle<int> Terminal::DrawCursor(bool visible) {
   const auto color = visible ? ToColor(0xFFFFFF) : ToColor(0x000000);
   const auto pos = Vector2D<int>{cursor_.x * 8 + 4, cursor_.y * 16 + 5};
-  FillRectangle(*window_->InnerWriter(), pos, {7, 15}, color);
+  const auto size = Vector2D<int>{7, 15};
+
+  FillRectangle(*window_->InnerWriter(), pos, size, color);
+
+  return {pos, size};
+}
+
+Message MakeCursorBlinkMessage(uint64_t task_id, unsigned int layer_id, LayerOperation op, Rectangle<int> area) {
+  Message msg{Message::kLayer, task_id};
+  msg.arg.layer.layer_id = layer_id;
+  msg.arg.layer.op = op;
+  msg.arg.layer.x = area.pos.x;
+  msg.arg.layer.y = area.pos.y;
+  msg.arg.layer.w = area.size.x;
+  msg.arg.layer.h = area.size.y;
+
+  return msg;
 }
 
 void TaskTerminal(uint64_t task_id, int64_t data) {
@@ -51,11 +71,15 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
 
     switch(msg->type) {
       case Message::kTimerTimeout:
-        terminal->BlinkCursor();
         {
-          Message msg{Message::kLayer, task_id};
-          msg.arg.layer.layer_id = terminal->LayerID();
-          msg.arg.layer.op = LayerOperation::Draw;
+          const auto area = terminal->BlinkCursor();
+          Message msg = MakeCursorBlinkMessage(
+            task_id, 
+            terminal->LayerID(), 
+            LayerOperation::DrawArea,
+            area
+          );
+
           __asm__("cli");
           task_manager->SendMessage(1, msg);
           __asm__("sti");

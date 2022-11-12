@@ -38,6 +38,7 @@ class LayerManager {
     Layer& NewLayer();
     void Draw(const Rectangle<int>& area) const;
     void Draw(unsigned int id) const;
+    void Draw(unsigned int id, Rectangle<int> area) const;
     void Move(unsigned int id, Vector2D<int> new_position);
     void MoveRelative(unsigned int id, Vector2D<int> pos_diff);
     void UpDown(unsigned int id, int new_height);

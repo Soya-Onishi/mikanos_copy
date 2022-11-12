@@ -3,7 +3,8 @@
 enum class LayerOperation {
   Move,
   MoveRelative,
-  Draw
+  Draw,
+  DrawArea,
 };
 
 struct Message {
@@ -32,6 +33,8 @@ struct Message {
       unsigned int layer_id;
       int x;
       int y;
+      int w;
+      int h;
     } layer;
   } arg;
 };

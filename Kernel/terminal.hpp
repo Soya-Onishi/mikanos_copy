@@ -13,7 +13,7 @@ class Terminal {
 
     Terminal();
     unsigned int LayerID() const { return layer_id_; }
-    void BlinkCursor();
+    Rectangle<int> BlinkCursor();
   
   private:
     std::shared_ptr<ToplevelWindow> window_;
@@ -21,7 +21,7 @@ class Terminal {
     
     Vector2D<int> cursor_{0, 0};
     bool cursor_visible_{false};
-    void DrawCursor(bool visible);
+    Rectangle<int> DrawCursor(bool visible);
 };
 
 void TaskTerminal(uint64_t task_id, int64_t data);
