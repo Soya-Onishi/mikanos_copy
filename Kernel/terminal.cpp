@@ -73,7 +73,7 @@ Rectangle<int> Terminal::InputKey(uint8_t modifier, uint8_t keycode, char ascii)
       if(cursor_.x > 0) {
         cursor_.x--;
         FillRectangle(*window_->InnerWriter(), CalcCursorPos(), {8, 16}, ToColor(0x000000));
-        draw_area.pos = CalcCursorPos();
+        draw_area.pos = ToplevelWindow::kTopLeftMargin + CalcCursorPos();
 
         if(linebuf_index_ > 0) {
           linebuf_index_--;
@@ -146,7 +146,10 @@ void Terminal::ExecuteLine() {
       Print(first_arg);
     }
     Print("\n");
-  } else {
+  } else if(strcmp(command, "clear") == 0) {
+    FillRectangle(*window_->InnerWriter(), {0, 0}, window_->InnerSize(), ToColor(0x000000));
+    cursor_.y = 0;
+  }else {
     Print("command not found: ");
     Print(command);
     Print("\n");
