@@ -173,6 +173,16 @@ void DrawCloseButton(PixelWriter &writer, int win_width)
   }
 }
 
+void DrawWindowTitle(PixelWriter &writer, const char *title, bool active)
+{
+  const auto win_w = writer.Width();
+  uint32_t bg_color = active ? 0x000084 : 0x848484;
+  FillRectangle(writer, {3, 3}, {win_w - 6, 18}, ToColor(bg_color));
+  WriteString(writer, {24, 4}, title, ToColor(0xFFFFFF));
+
+  DrawCloseButton(writer, win_w);
+}
+
 void DrawWindow(PixelWriter &writer, const char *title)
 {
   auto fill_rect = [&writer](Vector2D<int> pos, Vector2D<int> size, uint32_t c)
@@ -182,21 +192,6 @@ void DrawWindow(PixelWriter &writer, const char *title)
 
   const auto win_w = writer.Width();
   const auto win_h = writer.Height();
-
   fill_rect({0, 0}, {win_w, win_h}, 0xC6C6C6);
-  fill_rect({1, 1}, {win_w - 1, 20}, 0x000084);
-  WriteString(writer, {2, 4}, title, ToColor(0xFFFFFF));
-
-  // Draw Close button
-  DrawCloseButton(writer, win_w);
-}
-
-void DrawWindowTitle(PixelWriter &writer, const char *title, bool active)
-{
-  const auto win_w = writer.Width();
-  uint32_t bg_color = active ? 0x000084 : 0x848484;
-  FillRectangle(writer, {3, 3}, {win_w - 6, 18}, ToColor(bg_color));
-  WriteString(writer, {24, 4}, title, ToColor(0xFFFFFF));
-
-  DrawCloseButton(writer, win_w);
+  DrawWindowTitle(writer, title, false); 
 }

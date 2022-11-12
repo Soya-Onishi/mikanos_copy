@@ -154,7 +154,7 @@ void InputTextWindow(ToplevelWindow& window, const unsigned int id, char c) {
     return;
   }
 
-  auto pos = []() { return Vector2D<int>{8 + 8 * text_window_index, 24 + 6}; };
+  auto pos = []() { return Vector2D<int>{4 + 8 * text_window_index, 6}; };
   const int max_chars = (text_window->Width() - 16) / 8 - 1;
   if(c == '\b' && text_window_index > 0) {
     DrawTextCursor(false);
