@@ -48,7 +48,7 @@ Vector2D<int> Terminal::CalcCursorPos() const {
 Rectangle<int> Terminal::InputKey(uint8_t modifier, uint8_t keycode, char ascii) {
   DrawCursor(false);
   
-  Rectangle<int> draw_area{CalcCursorPos(), {8*2, 16}};
+  Rectangle<int> draw_area{ToplevelWindow::kTopLeftMargin + CalcCursorPos(), {8*2, 16}};
 
   switch(ascii) {
     case '\n':
@@ -154,14 +154,6 @@ void TaskTerminal(uint64_t task_id, int64_t data) {
             msg->arg.keyboard.ascii
           );
 
-          Log(kInfo, "char: %c[{%d, %d}, {%d, %d}]\n", 
-            msg->arg.keyboard.ascii,
-            area.pos.x,
-            area.pos.y,
-            area.size.x,
-            area.size.y
-          );
-          
           Message msg = MakeLayerMessage(
             task_id,
             terminal->LayerID(),

@@ -267,6 +267,8 @@ extern "C" void kernel_main_new_stack(
   Task& task_b = task_manager->NewTask().InitContext(TaskB, 45).Wakeup();
   const uint64_t task_terminal_id = task_manager->NewTask().InitContext(TaskTerminal, 0).Wakeup().ID();
 
+  layer_task_map = new std::map<unsigned int, uint64_t>();
+
   usb::xhci::Initialize();    
   InitializeMouse();
   InitializeKeyboard();
