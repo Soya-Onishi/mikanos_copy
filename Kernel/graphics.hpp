@@ -133,3 +133,11 @@ inline PixelWriter* screen_writer;
 
 void InitializeGraphics(const FrameBufferConfig& config);
 Vector2D<int> ScreenSize();
+
+constexpr PixelColor ToColor(uint32_t c) {
+  return {
+    static_cast<uint8_t>((c >> 16) & 0xFF),
+    static_cast<uint8_t>((c >>  8) & 0xFF),
+    static_cast<uint8_t>((c      ) & 0xFF)
+  };
+}

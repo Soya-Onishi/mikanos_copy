@@ -81,3 +81,4 @@ Vector2D<int> ScreenSize() {
     static_cast<int>(screen_config.vertical_resolution)
   };
 }
+
