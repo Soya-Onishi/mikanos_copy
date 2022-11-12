@@ -6,6 +6,7 @@
 #include "task.hpp"
 #include "font.hpp"
 #include "logger.hpp"
+#include "pci.hpp"
 
 Terminal::Terminal() {
   window_ = std::make_shared<ToplevelWindow>(
@@ -23,6 +24,8 @@ Terminal::Terminal() {
     .ID();
 
   Print("> ");
+
+  cmd_history_.resize(8);
 }
 
 Rectangle<int> Terminal::BlinkCursor() {
@@ -55,6 +58,12 @@ Rectangle<int> Terminal::InputKey(uint8_t modifier, uint8_t keycode, char ascii)
   switch(ascii) {
     case '\n':
       linebuf_[linebuf_index_] = 0;
+
+      if(linebuf_index_ > 0) {
+        cmd_history_.pop_back();
+        cmd_history_.push_front(linebuf_);
+      }
+      
       linebuf_index_ = 0;
       cursor_.x = 0;
       if(cursor_.y < kRows - 1) {
@@ -81,7 +90,11 @@ Rectangle<int> Terminal::InputKey(uint8_t modifier, uint8_t keycode, char ascii)
       }
       break;
     default:
-      if(ascii != 0 && cursor_.x < kColumns - 1 && linebuf_index_ < kLineMax - 1) {
+      if(keycode == 0x51) {
+        draw_area = HistoryUpDown(-1);
+      } else if (keycode == 0x52) {
+        draw_area = HistoryUpDown(1);
+      } else if(ascii != 0 && cursor_.x < kColumns - 1 && linebuf_index_ < kLineMax - 1) {
         linebuf_[linebuf_index_] = ascii;
         linebuf_index_++;
         WriteAscii(*window_->InnerWriter(), CalcCursorPos(), ascii, ToColor(0xFFFFFF));
@@ -149,12 +162,53 @@ void Terminal::ExecuteLine() {
   } else if(strcmp(command, "clear") == 0) {
     FillRectangle(*window_->InnerWriter(), {0, 0}, window_->InnerSize(), ToColor(0x000000));
     cursor_.y = 0;
-  }else {
+  } else if(strcmp(command, "lspci") == 0) {
+    char s[64];
+    for (int i = 0; i < pci::num_device; i++) {
+      const auto& dev = pci::devices[i];
+      auto vendor_id = pci::ReadVendorId(dev.bus, dev.device, dev.function);
+      sprintf(s, "%02x:%02x.%d vend=%04x head=%02x class=%02x.%02x.%02x\n",
+        dev.bus, dev.device, dev.function, vendor_id, dev.header_type,
+        dev.class_code.base, dev.class_code.sub, dev.class_code.interface
+      );
+      Print(s);
+    }
+  } else {
     Print("command not found: ");
     Print(command);
     Print("\n");
   }
 }
+
+Rectangle<int> Terminal::HistoryUpDown(int direction) {
+  if(direction == -1 && cmd_history_index_ >= 0) {
+    cmd_history_index_--;
+  } else if(direction == 1 && cmd_history_index_ + 1 < cmd_history_.size()) {
+    cmd_history_index_++;
+  }
+
+  cursor_.x = 1;
+  const auto first_pos = CalcCursorPos();
+
+  Rectangle<int> draw_area{first_pos, {(kColumns - 1) * 8, 16}};
+  FillRectangle(*window_->InnerWriter(), draw_area.pos, draw_area.size, ToColor(0x000000));
+
+  const char* history = "";
+  if(cmd_history_index_ >= 0) {
+    history = &cmd_history_[cmd_history_index_][0];
+  }
+
+  strcpy(&linebuf_[0], history);
+  linebuf_index_ = strlen(history);
+
+  WriteString(*window_->InnerWriter(), first_pos, history, ToColor(0xFFFFFF));
+  cursor_.x = linebuf_index_ + 1;
+
+  draw_area.pos = draw_area.pos + ToplevelWindow::kTopLeftMargin;
+
+  return draw_area; 
+}
+
 Message MakeLayerMessage(uint64_t task_id, unsigned int layer_id, LayerOperation op, Rectangle<int> area) {
   Message msg{Message::kLayer, task_id};
   msg.arg.layer.layer_id = layer_id;

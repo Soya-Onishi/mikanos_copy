@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 #include <array>
+#include <deque>
 
 #include "window.hpp"
 #include "graphics.hpp"
@@ -32,6 +33,10 @@ class Terminal {
     int linebuf_index_{0};
     std::array<char, kLineMax> linebuf_{};
     void Scroll_OneLine();
+
+    std::deque<std::array<char, kLineMax>> cmd_history_{};
+    int cmd_history_index_{-1};
+    Rectangle<int> HistoryUpDown(int direction);
 };
 
 void TaskTerminal(uint64_t task_id, int64_t data);
