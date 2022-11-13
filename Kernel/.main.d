@@ -59,7 +59,7 @@ main.o: main.cpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__node_handle \
   timer.hpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/queue \
-  acpi.hpp keyboard.hpp task.hpp terminal.hpp usb/memory.hpp \
+  acpi.hpp keyboard.hpp task.hpp terminal.hpp fat.hpp usb/memory.hpp \
   usb/device.hpp usb/setupdata.hpp usb/endpoint.hpp usb/arraymap.hpp \
   usb/classdriver/mouse.hpp usb/classdriver/hid.hpp \
   usb/classdriver/base.hpp usb/xhci/xhci.hpp usb/xhci/registers.hpp \
