@@ -85,8 +85,11 @@ bool NameIsEqual(const DirectoryEntry& dir, const char* name) {
     ext[i] = 0;
   }
 
-  sprintf(filename, "%s.%s", base, ext);
-  
+  if(ext[0]) {
+    sprintf(filename, "%s.%s", base, ext);
+  } else {
+    sprintf(filename, "%s", base);
+  }
   return strcmp(filename, name) == 0;
 }
 }

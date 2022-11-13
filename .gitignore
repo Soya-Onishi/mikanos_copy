@@ -2,3 +2,4 @@
 *.efi
 *.elf
 .vscode/
+target/
