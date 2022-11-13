@@ -201,7 +201,6 @@ EFI_STATUS EFIAPI UefiMain(
     }
   }
 
-  while(1) __asm__("hlt");
   entry_point(&config, &memmap, acpi_table, volume_image);
 
   Print(L"Exit from kernel (This is fatal)\n");
@@ -329,7 +328,7 @@ EFI_STATUS ReadFile(EFI_FILE_PROTOCOL* file, VOID** buffer) {
   }
 
   EFI_FILE_INFO* file_info = (EFI_FILE_INFO*)file_info_buffer;
-  UINTN file_size = file_info->Size;
+  UINTN file_size = file_info->FileSize;
 
   // file->GetInfoによってfile_info_bufferに格納されたファイル情報を用いて
   // （実際にはfile_info_bufferをキャストして入れたfile_infoを用いて）
