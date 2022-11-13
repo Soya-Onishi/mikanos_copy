@@ -1,12 +1,15 @@
-#include <cstdint>
 #include <memory>
 
 #include "fat.hpp"
 #include "logger.hpp"
+#include "pci.hpp"
 
 namespace fat {
 void Initialize(void* volume_image) {
   boot_volume_image = reinterpret_cast<BPB*>(volume_image);
+  bytes_per_cluster = 
+    static_cast<unsigned long>(boot_volume_image->bytes_per_sector) *
+    boot_volume_image->sectors_per_cluster;
 }
 
 uintptr_t GetClusterAddr(unsigned long cluster) {
@@ -32,5 +35,58 @@ void ReadName(const DirectoryEntry& entry, char* base, char* ext) {
   for(int i = 2; i >= 0 && ext[i] == 0x20; i--) {
     ext[i] = 0;
   } 
+}
+
+unsigned long NextCluster(unsigned long cluster) {
+  uintptr_t fat_offset =
+    boot_volume_image->reserved_sector_count * 
+    boot_volume_image->bytes_per_sector;
+  uint32_t* fat = reinterpret_cast<uint32_t*>(
+    reinterpret_cast<uintptr_t>(boot_volume_image) + fat_offset
+  );
+
+  uint32_t next = fat[cluster];
+  if(next >= 0x0FFFFFF8ul) {
+    return kEndOfClusterChain;
+  }
+
+  return next;
+}
+
+DirectoryEntry* FindFile(const char* name, unsigned long directory_cluster) {
+  if(directory_cluster == 0) {
+    directory_cluster = boot_volume_image->root_cluster;
+  }
+
+  while(directory_cluster != kEndOfClusterChain) {
+    auto dir = GetSectorByCluster<DirectoryEntry>(directory_cluster);
+    for(int i = 0; i< bytes_per_cluster / sizeof(DirectoryEntry); i++) {
+      if(NameIsEqual(dir[i], name)) {
+        return &dir[i];
+      }
+    }
+
+    directory_cluster = NextCluster(directory_cluster);
+  }
+
+  return nullptr;
+}
+
+bool NameIsEqual(const DirectoryEntry& dir, const char* name) {
+  char base[9], ext[4];
+  char filename[13];
+  memcpy(base, &dir.name[0], 8);
+  memcpy(ext, &dir.name[8], 3);
+
+  for(int i = 7; i >= 0 && base[i] == 0x20; i--) {
+    base[i] = 0;
+  }
+  for(int i = 2; i >= 0 && ext[i] == 0x20; i--) {
+    ext[i] = 0;
+  }
+
+  sprintf(filename, "%s.%s", base, ext);
+  
+  return strcmp(filename, name) == 0;
 }
 }

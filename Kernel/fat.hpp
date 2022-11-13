@@ -71,6 +71,9 @@ namespace fat
   void Initialize(void *volume_image);
   uintptr_t GetClusterAddr(unsigned long cluster);
   void ReadName(const DirectoryEntry &entry, char *base, char *ext);
+  unsigned long NextCluster(unsigned long cluster);
+  DirectoryEntry* FindFile(const char* name, unsigned long directory_cluster = 0);
+  bool NameIsEqual(const DirectoryEntry& dir, const char* name);
 
   template <class T>
   T *GetSectorByCluster(unsigned long cluster)
@@ -79,4 +82,7 @@ namespace fat
   }
 
   inline BPB *boot_volume_image;
+
+  static const unsigned long kEndOfClusterChain = 0x0FFFFFFFlu;
+  inline unsigned long bytes_per_cluster;
 }
