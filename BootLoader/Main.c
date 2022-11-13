@@ -19,6 +19,9 @@ EFI_STATUS GetMemoryMap(struct MemoryMap* map);
 EFI_STATUS SaveMemoryMap(struct MemoryMap* map, EFI_FILE_PROTOCOL* file);
 EFI_STATUS OpenRootDir(EFI_HANDLE image_handle, EFI_FILE_PROTOCOL** root);
 EFI_STATUS OpenGOP(EFI_HANDLE image_handle, EFI_GRAPHICS_OUTPUT_PROTOCOL** gop);
+EFI_STATUS ReadFile(EFI_FILE_PROTOCOL* file, VOID** buffer);
+EFI_STATUS OpenBlockIoProtocolForLoadedImage(EFI_HANDLE image_handle, EFI_BLOCK_IO_PROTOCOL** block_io);
+EFI_STATUS ReadBlocks(EFI_BLOCK_IO_PROTOCOL* block_io, UINT32 media_id, UINTN read_bytes, VOID** buffer);
 void CalcLoadAddressRange(Elf64_Ehdr* ehdr, UINT64* first, UINT64 *last);
 void CopyLoadSegment(Elf64_Ehdr* ehdr);
 const CHAR16* GetMemoryTypeUnicode(EFI_MEMORY_TYPE type);
@@ -41,15 +44,6 @@ EFI_STATUS EFIAPI UefiMain(
   EFI_FILE_PROTOCOL* root_dir;
   OpenRootDir(image_handle, &root_dir);
 
-  EFI_FILE_PROTOCOL* kernel_file;
-  root_dir->Open(
-    root_dir,
-    &kernel_file,
-    L"\\kernel.elf",
-    EFI_FILE_MODE_READ,
-    0
-  );
-
   // GOPを用いたピクセル単位の描画
   EFI_GRAPHICS_OUTPUT_PROTOCOL* gop;
   OpenGOP(image_handle, &gop);  
@@ -71,6 +65,55 @@ EFI_STATUS EFIAPI UefiMain(
     gop->Mode->FrameBufferBase,
     gop->Mode->FrameBufferBase + gop->Mode->FrameBufferSize,
     gop->Mode->FrameBufferSize
+  );
+
+  // 名前がfat_diskのファイルを探し、それをブロックデバイスとして
+  // デバイスの中身をメモリにロードする。
+  // fat_diskが存在しない場合はブートローダのイメージが格納されている
+  // デバイスの先頭16MiBをメモリにロードする。
+  // ロードされたデータはvolume_imageが指す
+  VOID* volume_image;
+  EFI_FILE_PROTOCOL* volume_file;
+  status = root_dir->Open(
+    root_dir, &volume_file, L"\\fat_disk", EFI_FILE_MODE_READ, 0
+  );
+
+  if(status == EFI_SUCCESS) {
+    status = ReadFile(volume_file, &volume_image);
+    if(EFI_ERROR(status)) {
+      Print(L"failed to read volume file: %r", status);
+      Halt();
+    }
+  } else {
+    EFI_BLOCK_IO_PROTOCOL* block_io;
+    status = OpenBlockIoProtocolForLoadedImage(image_handle, &block_io);
+    if(EFI_ERROR(status)) {
+      Print(L"failed to open Block I/O Protocol: %r\n", status);
+      Halt();
+    }
+
+    EFI_BLOCK_IO_MEDIA* media = block_io->Media;
+    UINTN volume_bytes = (UINTN)media->BlockSize * (media->LastBlock + 1);
+    if(volume_bytes > 16 * 1024 * 1024) {
+      volume_bytes = 16 * 1024 * 1024;
+    }
+
+    Print(L"Reading %lu bytes (Present %d, BlockSize %u, LastBlock %u)\n", volume_bytes, media->MediaPresent, media->BlockSize, media->LastBlock);
+    
+    status = ReadBlocks(block_io, media->MediaId, volume_bytes, &volume_image);
+    if(EFI_ERROR(status)) {
+      Print(L"failed to read blocks: %r\n", status);
+      Halt();
+    }
+  }
+
+  EFI_FILE_PROTOCOL* kernel_file;
+  root_dir->Open(
+    root_dir,
+    &kernel_file,
+    L"\\kernel.elf",
+    EFI_FILE_MODE_READ,
+    0
   );
 
   // まずカーネルファイルの情報を取得する
@@ -114,7 +157,7 @@ EFI_STATUS EFIAPI UefiMain(
   CopyLoadSegment(kernel_ehdr);
 
   // エントリポイントの設定
-  typedef void ENTRY_POINT(const struct FrameBufferConfig*, const struct MemoryMap*, const VOID*);
+  typedef void ENTRY_POINT(const struct FrameBufferConfig*, const struct MemoryMap*, const VOID*, VOID*);
   ENTRY_POINT* entry_point = (ENTRY_POINT*)kernel_ehdr->e_entry;
 
   Print(L"Kernel: 0x%0lx (%lu bytes)\n", kernel_base_addr, kernel_file_size);
@@ -166,7 +209,7 @@ EFI_STATUS EFIAPI UefiMain(
     }
   }
 
-  entry_point(&config, &memmap, acpi_table);
+  entry_point(&config, &memmap, acpi_table, volume_image);
 
   Print(L"Exit from kernel (This is fatal)\n");
 
@@ -270,6 +313,95 @@ EFI_STATUS OpenGOP(EFI_HANDLE image_handle, EFI_GRAPHICS_OUTPUT_PROTOCOL** gop) 
   gBS->FreePool(gop_handles);
 
   return EFI_SUCCESS;
+}
+
+EFI_STATUS ReadFile(EFI_FILE_PROTOCOL* file, VOID** buffer) {
+  EFI_STATUS status;
+  // カーネルのイメージファイルロードとほぼ同じ内容のなので、
+  // こちらに説明を移動する。
+
+  // ファイル情報を取得するためのバッファのサイズを指定する。
+  UINTN file_info_size = sizeof(EFI_FILE_INFO) + sizeof(CHAR16) * 12;
+
+  // alignasとalignofによってfile_info_bufferが
+  // EFI_FILE_INFO構造体のアラインメントと合わない際に発生する問題を
+  // 回避することができる。
+  alignas(alignof(EFI_FILE_INFO)) UINT8 file_info_buffer[file_info_size];
+  status = file->GetInfo(
+    file, &gEfiFileInfoGuid,
+    &file_info_size, file_info_buffer
+  );
+  if(EFI_ERROR(status)) {
+    return status;
+  }
+
+  EFI_FILE_INFO* file_info = (EFI_FILE_INFO*)file_info_buffer;
+  UINTN file_size = file_info->Size;
+
+  // file->GetInfoによってfile_info_bufferに格納されたファイル情報を用いて
+  // （実際にはfile_info_bufferをキャストして入れたfile_infoを用いて）
+  // 得た、ファイルサイズ情報からバッファを確保する。 
+  status = gBS->AllocatePool(EfiLoaderData, file_size, buffer);
+  if(EFI_ERROR(status)) {
+    return status;
+  }
+
+  // バッファ上にファイル内容を展開する。
+  return file->Read(file, &file_size, *buffer);
+}
+
+EFI_STATUS OpenBlockIoProtocolForLoadedImage(
+  EFI_HANDLE image_handle, EFI_BLOCK_IO_PROTOCOL** block_io
+) {
+  EFI_STATUS status;
+  EFI_LOADED_IMAGE_PROTOCOL* loaded_image;
+
+  status = gBS->OpenProtocol(
+    image_handle,
+    &gEfiLoadedImageProtocolGuid,
+    (VOID**)&loaded_image,
+    image_handle,
+    NULL,
+    EFI_OPEN_PROTOCOL_BY_HANDLE_PROTOCOL
+  );
+  if(EFI_ERROR(status)) {
+    return status;
+  }
+
+  status = gBS->OpenProtocol(
+    loaded_image->DeviceHandle,
+    &gEfiBlockIoProtocolGuid,
+    (VOID**)block_io,
+    image_handle,
+    NULL,
+    EFI_OPEN_PROTOCOL_BY_HANDLE_PROTOCOL
+  );
+  
+  return status;
+}
+
+EFI_STATUS ReadBlocks(
+  EFI_BLOCK_IO_PROTOCOL* block_io,
+  UINT32 media_id,
+  UINTN read_bytes,
+  VOID** buffer
+) {
+  EFI_STATUS status;
+
+  status = gBS->AllocatePool(EfiLoaderData, read_bytes, buffer);
+  if(EFI_ERROR(status)) {
+    return status;
+  }
+
+  status = block_io->ReadBlocks(
+    block_io,
+    media_id,
+    0,
+    read_bytes,
+    buffer
+  );
+
+  return status;
 }
 
 void CalcLoadAddressRange(Elf64_Ehdr* ehdr, UINT64* first, UINT64* last) {

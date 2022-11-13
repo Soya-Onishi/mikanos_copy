@@ -27,3 +27,4 @@ gEfiLoadedImageProtocolGuid
 gEfiLoadFileProtocolGuid
 gEfiSimpleFileSystemProtocolGuid
 gEfiGraphicsOutputProtocolGuid
+gEfiBlockIoProtocolGuid
