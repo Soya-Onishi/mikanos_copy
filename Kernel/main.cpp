@@ -164,10 +164,32 @@ void IdleTask(uint64_t task_id, int64_t data) {
   while(true) __asm__("hlt");
 }
 
+void ShowVolumeImage(void* volume_image) {
+  uint8_t* p = reinterpret_cast<uint8_t*>(volume_image);
+  printk("Volume Image:\n");
+
+  for(int i = 0; i < 16; i++) {
+    printk("%04x:", i * 16);
+    for(int j = 0; j < 8; j++) {
+      printk(" %02x", *p);
+      p++;
+    }
+    printk(" ");
+
+    for(int j = 0; j < 8; j++) {
+      printk(" %02x", *p);
+      p++;
+    }
+
+    printk("\n");
+  }
+}
+
 extern "C" void kernel_main_new_stack(
   const FrameBufferConfig& frame_buffer_config_ref,
   const MemoryMap& memmap_ref,
-  const acpi::RSDP& acpi_table
+  const acpi::RSDP& acpi_table,
+  void* volume_image
 ) {    
   __asm__("cli");
 
@@ -211,6 +233,8 @@ extern "C" void kernel_main_new_stack(
   usb::xhci::Initialize();    
   InitializeMouse();
   InitializeKeyboard();
+
+  ShowVolumeImage(volume_image);
 
   __asm__("sti");  
 
