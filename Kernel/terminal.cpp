@@ -278,6 +278,32 @@ std::vector<char*> MakeArgVector(char* command, char* first_arg) {
   return argv;
 }
 
+std::vector<uint8_t> LoadElf(std::vector<uint8_t>& file_buf) {
+  auto elf_header = reinterpret_cast<Elf64_Ehdr*>(&file_buf[0]);
+  auto phdr_ptr = &file_buf[0] + static_cast<uintptr_t>(elf_header->e_phoff);
+  auto phdr_num = elf_header->e_phnum;
+  auto phdr_size = elf_header->e_phentsize;
+
+  long max_byte = 0;
+  for(int i = 0; i < phdr_num; i++) {
+    auto phdr = reinterpret_cast<Elf64_Phdr*>(phdr_ptr + phdr_size * i);
+    if(phdr->p_type == PT_LOAD) {
+      auto pos = phdr->p_paddr + phdr->p_memsz;
+      max_byte = max_byte > pos ? max_byte : pos;
+    }
+  }
+
+  std::vector<uint8_t> buffer(max_byte);
+  for(int i = 0; i < phdr_num; i++) {
+    auto phdr = reinterpret_cast<Elf64_Phdr*>(phdr_ptr + phdr_size * i);
+    if(phdr->p_type == PT_LOAD) {
+      memcpy(&buffer[phdr->p_paddr], &file_buf[phdr->p_offset], phdr->p_filesz);
+    }
+  }
+
+  return buffer;
+}
+
 void Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command, char* first_arg) {
   auto cluster = file_entry.FirstCluster();
   auto remain_bytes = file_entry.file_size;
@@ -293,8 +319,6 @@ void Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command,
     cluster = fat::NextCluster(cluster);
   }
 
-  Log(kInfo, "read elf header");
-  __asm__("hlt");
 
   auto elf_header = reinterpret_cast<Elf64_Ehdr*>(&file_buf[0]);
   if(memcmp(elf_header->e_ident, "\x7f" "ELF", 4) != 0) {
@@ -304,17 +328,14 @@ void Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command,
     return;
   }
 
-  Log(kInfo, "parse arguments\n");
-  __asm__("hlt");
+  auto program_buf = LoadElf(file_buf);
+
   auto argv = MakeArgVector(command, first_arg);
   auto entry_addr = elf_header->e_entry;
-  entry_addr += reinterpret_cast<uintptr_t>(&file_buf[0]); 
+  entry_addr += reinterpret_cast<uintptr_t>(&program_buf[0]); 
   using Func = int(int, char**);
-  Log(kInfo, "run elf application\n");
-  __asm__("hlt");
   auto f = reinterpret_cast<Func*>(entry_addr);
   auto ret = f(argv.size(), &argv[0]);
-  Log(kInfo, "end of application\n");
 
   char s[64];
   sprintf(s, "app exited. ret = %d\n", ret);
