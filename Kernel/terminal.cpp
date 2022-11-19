@@ -1,3 +1,4 @@
+#include <vector>
 #include <memory>
 
 #include "terminal.hpp"
@@ -8,6 +9,7 @@
 #include "logger.hpp"
 #include "pci.hpp"
 #include "fat.hpp"
+#include "../BootLoader/elf.hpp"
 
 Terminal::Terminal() {
   window_ = std::make_shared<ToplevelWindow>(
@@ -240,12 +242,43 @@ void Terminal::ExecuteLine() {
       Print(command);
       Print("\n");
     } else {
-      ExecuteFile(*file_entry);
+      ExecuteFile(*file_entry, command, first_arg);
     }    
   }
 }
 
-void Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry) {
+std::vector<char*> MakeArgVector(char* command, char* first_arg) {
+  std::vector<char*> argv;
+  argv.push_back(command);
+
+  char* p = first_arg;
+  while(true) {
+    while(isspace(p[0])) {
+      p++;
+    }
+
+    if(p[0] == 0) {
+      break;
+    } 
+
+    argv.push_back(p);
+
+    while(p[0] != 0 && !isspace(p[0])) {
+      p++;
+    }
+
+    if(p[0] == 0) {
+      break;
+    }
+
+    p[0] = 0;
+    p++;
+  }
+
+  return argv;
+}
+
+void Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command, char* first_arg) {
   auto cluster = file_entry.FirstCluster();
   auto remain_bytes = file_entry.file_size;
 
@@ -260,9 +293,32 @@ void Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry) {
     cluster = fat::NextCluster(cluster);
   }
 
-  using Func = void();
-  auto f = reinterpret_cast<Func*>(&file_buf[0]);
-  f();
+  Log(kInfo, "read elf header");
+  __asm__("hlt");
+
+  auto elf_header = reinterpret_cast<Elf64_Ehdr*>(&file_buf[0]);
+  if(memcmp(elf_header->e_ident, "\x7f" "ELF", 4) != 0) {
+    using Func = void();
+    auto f = reinterpret_cast<Func*>(&file_buf[0]);
+    f();
+    return;
+  }
+
+  Log(kInfo, "parse arguments\n");
+  __asm__("hlt");
+  auto argv = MakeArgVector(command, first_arg);
+  auto entry_addr = elf_header->e_entry;
+  entry_addr += reinterpret_cast<uintptr_t>(&file_buf[0]); 
+  using Func = int(int, char**);
+  Log(kInfo, "run elf application\n");
+  __asm__("hlt");
+  auto f = reinterpret_cast<Func*>(entry_addr);
+  auto ret = f(argv.size(), &argv[0]);
+  Log(kInfo, "end of application\n");
+
+  char s[64];
+  sprintf(s, "app exited. ret = %d\n", ret);
+  Print(s);
 }
 
 Rectangle<int> Terminal::HistoryUpDown(int direction) {
