@@ -3,8 +3,8 @@ OUTDIR = target
 
 CPPFLAGS += -I.
 CFLAGS += -O2 -Wall -g --target=x86_64-elf -freestanding
-CXXFLAGS += -O2 -Wall -g --target=x86_64-elf -ffreestanding -fno-exceptions -fno-rtti -std=c++17
-LDFLAGS += --entry main -z norelro --image-base 0 --static
+CXXFLAGS += -O2 -Wall -g --target=x86_64-elf -mcmodel=large -ffreestanding -fno-exceptions -fno-rtti -std=c++17
+LDFLAGS += --entry main -z norelro --image-base 0xFFFF800000000000 --static
 
 .PHONY: all
 all: $(OUTDIR)/$(TARGET)
