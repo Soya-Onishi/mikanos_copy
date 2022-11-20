@@ -47,14 +47,13 @@ WithError<PageMapEntry*> SetNewPageMapIfNotPresent(PageMapEntry* entry) {
   }
 
   auto [ child_map, err ] = NewPageMap();
+  
   if(err) {
     return { nullptr, err };
   }
 
   entry->SetPointer(child_map);
   entry->bits.present = 1;
-
-
 
   return { child_map, MAKE_ERROR(Error::kSuccess) };
 }
@@ -63,7 +62,6 @@ WithError<size_t> SetupPageMap(PageMapEntry* table, int page_map_level, LinearAd
   while(num_4kpages > 0) {
     const auto entry_index = addr.Part(page_map_level);
     auto [ child_table, err ] = SetNewPageMapIfNotPresent(&table[entry_index]);
-    Log(kInfo, "setting child page done map: %p, next: %p, present: %d\n", child_table, table[entry_index].Pointer(), table[entry_index].bits.present);
     if(err) {
       return { num_4kpages, err };
     }
@@ -79,7 +77,7 @@ WithError<size_t> SetupPageMap(PageMapEntry* table, int page_map_level, LinearAd
 
       num_4kpages = num_remain_pages;
     }
-
+    
     if(entry_index == 511) {
       break;
     }

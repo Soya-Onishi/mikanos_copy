@@ -27,7 +27,7 @@ union LinearAddress4Level {
     }
   }
 
-  int SetPart(int page_map_level, int value) {
+  void SetPart(int page_map_level, int value) {
     switch(page_map_level) {
       case 0: parts.offset = value; break;
       case 1: parts.page = value; break;
