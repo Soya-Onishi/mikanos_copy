@@ -23,11 +23,11 @@ extern "C" int main(int argc, char** argv) {
   stack_idx = -1;
 
   for(int i = 1; i < argc; i++) {
-    if(argv[i][0] == '+') {
+    if(strcmp(argv[i], "+") == 0) {
       long b = Pop();
       long a = Pop();
       Push(a + b);
-    } else if (argv[i][0] == '-') {
+    } else if (strcmp(argv[i], "-") == 0) {
       long b = Pop();
       long a = Pop();
       Push(a - b);
