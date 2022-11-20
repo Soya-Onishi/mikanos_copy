@@ -55,4 +55,4 @@ terminal.o: terminal.cpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/map \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__tree \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__node_handle \
-  message.hpp task.hpp font.hpp logger.hpp pci.hpp ../BootLoader/elf.hpp
+  message.hpp task.hpp font.hpp logger.hpp pci.hpp elf.hpp paging.hpp

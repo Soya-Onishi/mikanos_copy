@@ -73,6 +73,7 @@ namespace fat
   void ReadName(const DirectoryEntry &entry, char *base, char *ext);
   unsigned long NextCluster(unsigned long cluster);
   DirectoryEntry* FindFile(const char* name, unsigned long directory_cluster = 0);
+  size_t LoadFile(void* buf, size_t len, const DirectoryEntry& entry);
   bool NameIsEqual(const DirectoryEntry& dir, const char* name);
 
   template <class T>

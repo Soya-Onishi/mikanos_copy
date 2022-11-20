@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include "error.hpp"
 
 typedef uintptr_t Elf64_Addr;
 typedef uint64_t Elf64_Off;
@@ -79,3 +80,6 @@ typedef struct {
 #define ELF64_R_INFO(s,t) (((s) << 32) + ((t) & 0xffffffffL))
 
 #define R_X86_64_RELATIVE 8
+
+uintptr_t GetFirstLoadAddress(Elf64_Ehdr* ehdr);
+Error LoadElf(Elf64_Ehdr* ehdr);

@@ -9,7 +9,9 @@
 #include "logger.hpp"
 #include "pci.hpp"
 #include "fat.hpp"
-#include "../BootLoader/elf.hpp"
+#include "elf.hpp"
+#include "paging.hpp"
+#include "error.hpp"
 
 Terminal::Terminal() {
   window_ = std::make_shared<ToplevelWindow>(
@@ -242,7 +244,11 @@ void Terminal::ExecuteLine() {
       Print(command);
       Print("\n");
     } else {
-      ExecuteFile(*file_entry, command, first_arg);
+      if(auto err = ExecuteFile(*file_entry, command, first_arg)) {
+        char s[128];
+        sprintf(s, "failed to execute file: %s %s:%d\n", err.Name(), err.File(), err.Line());
+        Print(s);
+      }
     }    
   }
 }
@@ -278,61 +284,27 @@ std::vector<char*> MakeArgVector(char* command, char* first_arg) {
   return argv;
 }
 
-std::vector<uint8_t> LoadElf(std::vector<uint8_t>& file_buf) {
-  auto elf_header = reinterpret_cast<Elf64_Ehdr*>(&file_buf[0]);
-  auto phdr_ptr = &file_buf[0] + static_cast<uintptr_t>(elf_header->e_phoff);
-  auto phdr_num = elf_header->e_phnum;
-  auto phdr_size = elf_header->e_phentsize;
-
-  long max_byte = 0;
-  for(int i = 0; i < phdr_num; i++) {
-    auto phdr = reinterpret_cast<Elf64_Phdr*>(phdr_ptr + phdr_size * i);
-    if(phdr->p_type == PT_LOAD) {
-      auto pos = phdr->p_paddr + phdr->p_memsz;
-      max_byte = max_byte > pos ? max_byte : pos;
-    }
-  }
-
-  std::vector<uint8_t> buffer(max_byte);
-  for(int i = 0; i < phdr_num; i++) {
-    auto phdr = reinterpret_cast<Elf64_Phdr*>(phdr_ptr + phdr_size * i);
-    if(phdr->p_type == PT_LOAD) {
-      memcpy(&buffer[phdr->p_paddr], &file_buf[phdr->p_offset], phdr->p_filesz);
-    }
-  }
-
-  return buffer;
-}
-
-void Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command, char* first_arg) {
-  auto cluster = file_entry.FirstCluster();
-  auto remain_bytes = file_entry.file_size;
-
-  std::vector<uint8_t> file_buf(remain_bytes);
+Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command, char* first_arg) {
+  std::vector<uint8_t> file_buf(file_entry.file_size);
   auto p = &file_buf[0];
-
-  while(cluster != 0 && cluster != fat::kEndOfClusterChain) {
-    const auto copy_bytes = fat::bytes_per_cluster < remain_bytes ? fat::bytes_per_cluster : remain_bytes;
-    memcpy(p, fat::GetSectorByCluster<uint8_t>(cluster), copy_bytes);
-    remain_bytes -= copy_bytes;
-    p += copy_bytes;
-    cluster = fat::NextCluster(cluster);
+  if(file_entry.file_size != fat::LoadFile(&file_buf[0], file_entry.file_size, file_entry)) {
+    return MAKE_ERROR(Error::kBufferTooSmall);
   }
-
 
   auto elf_header = reinterpret_cast<Elf64_Ehdr*>(&file_buf[0]);
   if(memcmp(elf_header->e_ident, "\x7f" "ELF", 4) != 0) {
     using Func = void();
     auto f = reinterpret_cast<Func*>(&file_buf[0]);
     f();
-    return;
+    return MAKE_ERROR(Error::kSuccess);
   }
 
-  auto program_buf = LoadElf(file_buf);
+  if(auto err = LoadElf(elf_header)) {
+    return err;
+  }
 
   auto argv = MakeArgVector(command, first_arg);
   auto entry_addr = elf_header->e_entry;
-  entry_addr += reinterpret_cast<uintptr_t>(&program_buf[0]); 
   using Func = int(int, char**);
   auto f = reinterpret_cast<Func*>(entry_addr);
   auto ret = f(argv.size(), &argv[0]);
@@ -340,6 +312,13 @@ void Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command,
   char s[64];
   sprintf(s, "app exited. ret = %d\n", ret);
   Print(s);
+
+  const auto first_addr = GetFirstLoadAddress(elf_header);
+  if(auto err = CleanPageMaps(LinearAddress4Level{first_addr})) {
+    return err;
+  }
+
+  return MAKE_ERROR(Error::kSuccess);
 }
 
 Rectangle<int> Terminal::HistoryUpDown(int direction) {

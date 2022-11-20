@@ -8,6 +8,7 @@
 #include "window.hpp"
 #include "graphics.hpp"
 #include "fat.hpp"
+#include "error.hpp"
 
 class Terminal {
   public:
@@ -40,7 +41,7 @@ class Terminal {
     int cmd_history_index_{-1};
     Rectangle<int> HistoryUpDown(int direction);
 
-    void ExecuteFile(const fat::DirectoryEntry& file_entry, char* command, char* first_arg);
+    Error ExecuteFile(const fat::DirectoryEntry& file_entry, char* command, char* first_arg);
 };
 
 void TaskTerminal(uint64_t task_id, int64_t data);
