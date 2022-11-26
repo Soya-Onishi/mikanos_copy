@@ -12,6 +12,7 @@
 #include "elf.hpp"
 #include "paging.hpp"
 #include "error.hpp"
+#include "asmfunc.h"
 
 Terminal::Terminal() {
   window_ = std::make_shared<ToplevelWindow>(
@@ -253,9 +254,27 @@ void Terminal::ExecuteLine() {
   }
 }
 
-std::vector<char*> MakeArgVector(char* command, char* first_arg) {
-  std::vector<char*> argv;
-  argv.push_back(command);
+WithError<int> MakeArgVector(char* command, char* first_arg, char** argv, int argv_len, char* argbuf, int argbuf_len) {
+  int argc = 0;
+  int argbuf_index = 0;
+  
+  auto push_to_argv = [&](const char* s) {
+    if(argc >= argv_len || argbuf_index >= argbuf_len) {
+      return MAKE_ERROR(Error::kFull);
+    }
+
+    argv[argc] = &argbuf[argbuf_index];
+    strcpy(&argbuf[argbuf_index], s);
+
+    argbuf_index += strlen(s) + 1;
+    argc++;
+
+    return MAKE_ERROR(Error::kSuccess);
+  };
+
+  if(auto err = push_to_argv(command)) {
+    return { argc, err };
+  }
 
   char* p = first_arg;
   while(true) {
@@ -267,7 +286,9 @@ std::vector<char*> MakeArgVector(char* command, char* first_arg) {
       break;
     } 
 
-    argv.push_back(p);
+    if(auto err = push_to_argv(p)) {
+      return { argc, err };
+    }
 
     while(p[0] != 0 && !isspace(p[0])) {
       p++;
@@ -281,12 +302,11 @@ std::vector<char*> MakeArgVector(char* command, char* first_arg) {
     p++;
   }
 
-  return argv;
+  return { argc, MAKE_ERROR(Error::kSuccess) };
 }
 
 Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command, char* first_arg) {
   std::vector<uint8_t> file_buf(file_entry.file_size);
-  auto p = &file_buf[0];
   if(file_entry.file_size != fat::LoadFile(&file_buf[0], file_entry.file_size, file_entry)) {
     return MAKE_ERROR(Error::kBufferTooSmall);
   }
@@ -303,15 +323,32 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
     return err;
   }
 
-  auto argv = MakeArgVector(command, first_arg);
-  auto entry_addr = elf_header->e_entry;
-  using Func = int(int, char**);
-  auto f = reinterpret_cast<Func*>(entry_addr);
-  auto ret = f(argv.size(), &argv[0]);
+  LinearAddress4Level stack_frame_addr{ 0xFFFFFFFFFFFFE000 };
+  if(auto err = SetupPageMaps(stack_frame_addr, 1)) {
+    return err;
+  }
 
+  LinearAddress4Level args_frame_addr{ 0xFFFF'FFFF'FFFF'F000 };
+  if(auto err = SetupPageMaps(args_frame_addr, 1)) {
+    return err;
+  }
+  auto argv = reinterpret_cast<char**>(args_frame_addr.value);
+  int argv_len = 32;
+  auto argbuf = reinterpret_cast<char*>(args_frame_addr.value + sizeof(char**) * argv_len);
+  int argbuf_len = 4096 - sizeof(char**) * argv_len;
+  auto [argc, err] = MakeArgVector(command, first_arg, argv, argv_len, argbuf, argbuf_len);
+  if(err) {
+    return err;
+  }
+
+  auto entry_addr = elf_header->e_entry;
+  CallApp(argc, argv, 3 << 3 | 3, 4 << 3 | 3, entry_addr, stack_frame_addr.value + 4096 - 8);
+
+  /*
   char s[64];
   sprintf(s, "app exited. ret = %d\n", ret);
   Print(s);
+  */
 
   const auto first_addr = GetFirstLoadAddress(elf_header);
   if(auto err = CleanPageMaps(LinearAddress4Level{first_addr})) {

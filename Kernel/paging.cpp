@@ -66,6 +66,7 @@ WithError<size_t> SetupPageMap(PageMapEntry* table, int page_map_level, LinearAd
       return { num_4kpages, err };
     }
     table[entry_index].bits.writable = 1;
+    table[entry_index].bits.user = 1;
 
     if(page_map_level == 1) {
       num_4kpages--;

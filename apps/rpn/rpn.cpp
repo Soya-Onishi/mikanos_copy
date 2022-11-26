@@ -1,5 +1,6 @@
 #include <cstring>
 #include <cstdlib>
+#include "./asm.h"
 
 int stack_idx;
 long stack[128];
@@ -48,6 +49,7 @@ extern "C" int main(int argc, char** argv) {
   if(error_count > 0) {
     return error_count;
   } else {
+    halt();
     return static_cast<int>(Pop());
   }
 }
