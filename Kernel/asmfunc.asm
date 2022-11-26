@@ -188,7 +188,7 @@ extern LAPICTimerOnInterrupt
 global IntHandlerLAPICTimer
 IntHandlerLAPICTimer:
     push rbp
-   mov rsp, rbp
+   mov rbp, rsp
 
    sub rsp, 512
    fxsave [rsp]
