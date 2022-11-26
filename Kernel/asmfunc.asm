@@ -121,7 +121,7 @@ SwitchContext:
 
     mov rax, cr3
     mov [rsi + 0x00], rax ; CR3
-    mov rax, [rsp]
+    mov rax, [rsp]        ; rspの先頭は戻りアドレスを指すのでこれで良い？
     mov [rsi + 0x08], rax ; RIP
     pushfq
     pop qword [rsi + 0x10] ; RFLAGS

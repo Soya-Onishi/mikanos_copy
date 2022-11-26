@@ -144,9 +144,9 @@ void TaskManager::SwitchTask(const TaskContext& context) {
   // IntHadnlerAPICTimer内で保存したcontextを切り替え前のタスクのcontextに保存する
   memcpy(&task_ctx, &context, sizeof(TaskContext));
   Task* current_task = RotateRunQueue(false);
-  Task* next_task = running_[current_level_].front();
-  if(&CurrentTask() != current_task) {
-    RestoreContext(&CurrentTask().Context());  
+  Task* next_task = &CurrentTask();
+  if(next_task != current_task) {
+    RestoreContext(&next_task->Context());  
   }
 }
 
