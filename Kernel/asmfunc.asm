@@ -60,6 +60,11 @@ LoadGDT:
     pop rbp
     ret
 
+global LoadTR ; void LoadTR(uint16_t sel);
+LoadTR:
+    ltr di
+    ret
+
 global SetDSAll ; void SetDSAll(uint16_t value);
 SetDSAll:
     mov ds, di

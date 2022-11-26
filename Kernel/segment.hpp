@@ -24,6 +24,9 @@ union SegmentDescriptor {
 } __attribute__((packed));
 
 void InitializeSegment();
+void InitializeTSS();
 
-inline uint16_t kKernelCS;
-inline uint64_t kKernelSS;
+inline const uint16_t kKernelCS = 1 << 3;
+inline const uint16_t kKernelSS = 2 << 3;
+inline const uint16_t kKernelDS = 0;
+inline const uint16_t kTSS      = 5 << 3;

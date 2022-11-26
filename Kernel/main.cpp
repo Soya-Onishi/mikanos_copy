@@ -203,6 +203,7 @@ extern "C" void kernel_main_new_stack(
   InitializeSegment();
   InitializePagetable();
   InitializeMemoryManager(memmap);    
+  InitializeTSS();
     
   InitializeInterrupt();
   InitializePCI();
