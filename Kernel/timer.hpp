@@ -4,6 +4,7 @@
 #include <deque>
 #include <queue>
 
+#include "task.hpp"
 #include "message.hpp"
 
 class Timer {
@@ -40,7 +41,7 @@ void InitializeAPICTimer();
 void StartAPICTimer();
 uint32_t LAPICTimerElapsed();
 void StopLAPICTimer();
-void LAPICTimerOnInterrupt();
+extern "C" void LAPICTimerOnInterrupt(const TaskContext& context);
 
 inline bool operator<(const Timer& lhs, const Timer& rhs) {
   return lhs.Timeout() > rhs.Timeout();

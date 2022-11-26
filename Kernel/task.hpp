@@ -57,7 +57,8 @@ class TaskManager {
 
     TaskManager();
     Task& NewTask();
-    void SwitchTask(bool current_sleep = false);
+    Task* RotateRunQueue(bool current_sleep);
+    void SwitchTask(const TaskContext& context);
     Task& CurrentTask();
     Error SendMessage(uint64_t id, const Message& message);    
 

@@ -113,7 +113,7 @@ Task& TaskManager::CurrentTask() {
   return *running_[current_level_].front();
 }
 
-void TaskManager::SwitchTask(bool current_sleep) {
+Task* TaskManager::RotateRunQueue(bool current_sleep) {
   auto& current_queue = running_[current_level_];
   Task* current_task = current_queue.front();
   current_queue.pop_front();
@@ -135,8 +135,19 @@ void TaskManager::SwitchTask(bool current_sleep) {
     }
   }
 
+  return current_task;
+}
+
+void TaskManager::SwitchTask(const TaskContext& context) { 
+  TaskContext& task_ctx = task_manager->CurrentTask().Context();
+  // IntHandlerAPICTimer呼び出し時点でのcontextが欲しいため、
+  // IntHadnlerAPICTimer内で保存したcontextを切り替え前のタスクのcontextに保存する
+  memcpy(&task_ctx, &context, sizeof(TaskContext));
+  Task* current_task = RotateRunQueue(false);
   Task* next_task = running_[current_level_].front();
-  SwitchContext(&next_task->Context(), &current_task->Context());  
+  if(&CurrentTask() != current_task) {
+    RestoreContext(&CurrentTask().Context());  
+  }
 }
 
 Error TaskManager::SendMessage(uint64_t id, const Message& message) {
@@ -158,7 +169,10 @@ void TaskManager::Sleep(Task* task) {
   task->SetRunning(false);
 
   if(task == running_[current_level_].front()) {
-    SwitchTask(true);
+    Task* current_task = RotateRunQueue(true);
+    TaskContext* next_ctx = &CurrentTask().Context();
+    SwitchContext(next_ctx, &current_task->Context());
+
     return;
   }
 

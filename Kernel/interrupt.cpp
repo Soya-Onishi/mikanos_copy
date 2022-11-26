@@ -7,6 +7,7 @@
 #include "asmfunc.h"
 #include "timer.hpp"
 #include "task.hpp"
+#include "asmfunc.h"
 
 #include "pci.hpp"
 #include "usb/memory.hpp"
@@ -57,12 +58,6 @@ void IntHandlerXHCI(InterruptFrame* frame) {
   NotifyEndOfInterrupt();
 }
 
-__attribute__((interrupt))
-void IntHandlerAPICTimer(InterruptFrame* frame) {
-  LAPICTimerOnInterrupt();
-  NotifyEndOfInterrupt();
-}
-
 void InitializeInterrupt() {  
   const uint16_t cs = GetCS();
   // const uint64_t offset = reinterpret_cast<uint64_t>(IntHandlerXHCI);
@@ -75,7 +70,7 @@ void InitializeInterrupt() {
   SetIDTEntry(
     idt[InterruptVector::kLAPICTimer],
     MakeIDTAttr(DescriptorType::kInterruptGate),
-    reinterpret_cast<uint64_t>(IntHandlerAPICTimer),
+    reinterpret_cast<uint64_t>(IntHandlerLAPICTimer),
     cs
   );
   LoadIDT(sizeof(idt) - 1, reinterpret_cast<uint64_t>(&idt[0]));

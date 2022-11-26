@@ -86,11 +86,11 @@ void StopLAPICTimer() {
   initial_count = 0;
 }
 
-void LAPICTimerOnInterrupt() {
+extern "C" void LAPICTimerOnInterrupt(const TaskContext& context) {
   const bool task_timer_timeout = timer_manager->Tick();
   NotifyEndOfInterrupt();
 
   if(task_timer_timeout && task_manager != nullptr) {
-    task_manager->SwitchTask();
+    task_manager->SwitchTask(context);
   }
 }
