@@ -135,8 +135,13 @@ void InitializeInterrupt() {
   };
 
   set_idt_entry(InterruptVector::kXHCI, IntHandlerXHCI);
-  set_idt_entry(InterruptVector::kLAPICTimer, IntHandlerLAPICTimer);
-  
+  SetIDTEntry(
+    idt[InterruptVector::kLAPICTimer],
+    MakeIDTAttr(DescriptorType::kInterruptGate, 0, true, kISTForTimer),
+    reinterpret_cast<uint64_t>(IntHandlerLAPICTimer),
+    cs
+  );
+
   set_idt_entry(0, IntHandlerDE);
   set_idt_entry(1, IntHandlerDB);
   set_idt_entry(3, IntHandlerBP);

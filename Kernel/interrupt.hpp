@@ -64,3 +64,5 @@ struct InterruptFrame {
 };
 
 void InitializeInterrupt();
+
+const int kISTForTimer = 1;

@@ -188,42 +188,42 @@ extern LAPICTimerOnInterrupt
 global IntHandlerLAPICTimer
 IntHandlerLAPICTimer:
     push rbp
-   mov rbp, rsp
+    mov rbp, rsp
 
-   sub rsp, 512
-   fxsave [rsp]
-   push r15
-   push r14
-   push r13
-   push r12
-   push r11
-   push r10
-   push r9
-   push r8
-   push qword [rbp]        ; RBP
-   push qword [rbp + 0x20] ; RSP
-   push rsi
-   push rdi
-   push rdx
-   push rcx
-   push rbx
-   push rax
+    sub rsp, 512
+    fxsave [rsp]
+    push r15
+    push r14
+    push r13
+    push r12
+    push r11
+    push r10
+    push r9
+    push r8
+    push qword [rbp]        ; RBP
+    push qword [rbp + 0x20] ; RSP
+    push rsi
+    push rdi
+    push rdx
+    push rcx
+    push rbx
+    push rax
 
-   mov ax, fs
-   mov bx, gs
-   mov rcx, cr3
+    mov ax, fs
+    mov bx, gs
+    mov rcx, cr3
 
-   push rbx                ; GS
-   push rax                ; FS
-   push qword [rbp + 0x28] ; SS
-   push qword [rbp + 0x10] ; CS
-   push rbp                ; reserved1
-   push qword [rbp + 0x18] ; RFLAGS
-   push qword [rbp + 0x08] ; RIP
-   push rcx                ; CR3
+    push rbx                ; GS
+    push rax                ; FS
+    push qword [rbp + 0x28] ; SS
+    push qword [rbp + 0x10] ; CS
+    push rbp                ; reserved1
+    push qword [rbp + 0x18] ; RFLAGS
+    push qword [rbp + 0x08] ; RIP
+    push rcx                ; CR3
 
-   mov rdi, rsp
-   call LAPICTimerOnInterrupt
+    mov rdi, rsp
+    call LAPICTimerOnInterrupt
 
     add rsp, 8 * 8 ; CR3からGSまでを無視
     pop rax

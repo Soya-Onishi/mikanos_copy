@@ -22,6 +22,10 @@ SYSCALL(LogString) {
     return - 1;
   }
 
+  for(volatile uint64_t i = 0; i < 100'000'000'000; i++) {
+    
+  }
+
   Log(static_cast<LogLevel>(arg1), "%s", s);
   return 0;
 }
