@@ -17,4 +17,6 @@ extern "C" {
   void RestoreContext(void* task_context);
   void CallApp(int argc, char** argv, uint16_t cs, uint16_t ss, uint64_t rip, uint64_t rsp);
   void IntHandlerLAPICTimer(); 
+  void WriteMSR(uint32_t msr, uint64_t value);
+  void SyscallEntry();
 }

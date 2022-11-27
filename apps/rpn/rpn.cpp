@@ -28,10 +28,12 @@ extern "C" int main(int argc, char** argv) {
       long b = Pop();
       long a = Pop();
       Push(a + b);
+      SyscallLogString(kInfo, "+");  
     } else if (strcmp(argv[i], "-") == 0) {
       long b = Pop();
       long a = Pop();
       Push(a - b);
+      SyscallLogString(kInfo, "-");  
     } else {
       long a = atol(argv[i]);
       if(a == 0) {
@@ -39,6 +41,7 @@ extern "C" int main(int argc, char** argv) {
       }
 
       Push(a);
+      SyscallLogString(kInfo, "#");   
     }
 
     if(stack_idx < 0 || stack_idx >= (sizeof(stack) / sizeof(stack[0]))) {
@@ -49,6 +52,7 @@ extern "C" int main(int argc, char** argv) {
   if(error_count > 0) {
     return error_count;
   } else {
+    SyscallLogString(kInfo, "\nHello This is RPN\n");
     halt();
     return static_cast<int>(Pop());
   }

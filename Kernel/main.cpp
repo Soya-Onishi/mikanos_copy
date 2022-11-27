@@ -28,6 +28,7 @@
 #include "task.hpp"
 #include "terminal.hpp"
 #include "fat.hpp"
+#include "syscall.hpp"
 #include "usb/memory.hpp"
 #include "usb/device.hpp"
 #include "usb/classdriver/mouse.hpp"
@@ -206,6 +207,7 @@ extern "C" void kernel_main_new_stack(
   InitializeTSS();
     
   InitializeInterrupt();
+  InitializeSyscall();
   InitializePCI();
   fat::Initialize(volume_image);
   

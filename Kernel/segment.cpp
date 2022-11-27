@@ -90,8 +90,8 @@ void setup_segments() {
   // long-modeではbaseとlimitは使用されないので、0と0xFFFFFuの適当な値にしている。
   set_code_segment(gdt[1], DescriptorType::kExecuteRead, 0, 0, 0xFFFFFu);
   set_data_segment(gdt[2], DescriptorType::kReadWrite, 0, 0, 0xFFFFFu);
-  set_code_segment(gdt[3], DescriptorType::kExecuteRead, 3, 0, 0xFFFFFu);
-  set_data_segment(gdt[4], DescriptorType::kReadWrite, 3, 0, 0xFFFFFu);
+  set_data_segment(gdt[3], DescriptorType::kReadWrite, 3, 0, 0xFFFFFu);
+  set_code_segment(gdt[4], DescriptorType::kExecuteRead, 3, 0, 0xFFFFFu);
   LoadGDT(sizeof(gdt) - 1, reinterpret_cast<uint64_t>(&gdt[0]));
 }
 
