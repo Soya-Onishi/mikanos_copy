@@ -31,4 +31,31 @@ syscall.o: syscall.cpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/_ansi.h \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/functional \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/bit \
-  syscall.hpp asmfunc.h msr.hpp logger.hpp
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/cerrno \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/errno.h \
+  syscall.hpp task.hpp \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/vector \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__bit_reference \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/climits \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/limits.h \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__split_buffer \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/deque \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/optional \
+  message.hpp error.hpp \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/cstdio \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/stdio.h \
+  terminal.hpp \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/map \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__tree \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__node_handle \
+  window.hpp \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/string \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/string_view \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__string \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/cwchar \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/cwctype \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/cctype \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/ctype.h \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/wctype.h \
+  graphics.hpp frame_buffer_config.hpp frame_buffer.hpp fat.hpp \
+  asmfunc.h msr.hpp logger.hpp

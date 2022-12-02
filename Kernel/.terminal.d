@@ -38,8 +38,11 @@ terminal.o: terminal.cpp \
   terminal.hpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/array \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/deque \
-  window.hpp \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/map \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__tree \
+  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__node_handle \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/optional \
+  window.hpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/string \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/string_view \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__string \
@@ -51,9 +54,5 @@ terminal.o: terminal.cpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/ctype.h \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/wctype.h \
   graphics.hpp frame_buffer_config.hpp frame_buffer.hpp error.hpp \
-  fat.hpp layer.hpp \
-  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/map \
-  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__tree \
-  /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/__node_handle \
-  message.hpp task.hpp font.hpp logger.hpp pci.hpp elf.hpp paging.hpp \
-  asmfunc.h
+  fat.hpp layer.hpp message.hpp task.hpp font.hpp logger.hpp pci.hpp \
+  elf.hpp paging.hpp asmfunc.h

@@ -12,3 +12,10 @@ SyscallLogString:       ; void SyscallLogString(LogLevel, const char* s);
   mov r10, rcx
   syscall
   ret
+
+global SyscallPutString
+SyscallPutString:       ; void SyscallLogString(LogLevel, const char* s);
+  mov eax, 0x80000001
+  mov r10, rcx
+  syscall
+  ret

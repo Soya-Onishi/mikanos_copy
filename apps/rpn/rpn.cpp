@@ -1,5 +1,6 @@
 #include <cstring>
 #include <cstdlib>
+#include <cstdio>
 #include "./asm.h"
 
 int stack_idx;
@@ -52,8 +53,9 @@ extern "C" int main(int argc, char** argv) {
   if(error_count > 0) {
     return error_count;
   } else {
-    SyscallLogString(kInfo, "\nHello This is RPN\n");
+    long result = Pop();
+    printf("result = %ld\n", result);
     halt();
-    return static_cast<int>(Pop());
+    return 0;
   }
 }

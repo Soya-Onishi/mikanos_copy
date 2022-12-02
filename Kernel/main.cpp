@@ -230,6 +230,7 @@ extern "C" void kernel_main_new_stack(
   auto text_window_writer = layer_manager->GetLayer(text_window_layer_id).GetWindow()->Writer();
   
   InitializeTask();
+  terminals = new std::map<uint64_t, Terminal*>;
   Task& main_task = task_manager->CurrentTask();
   const uint64_t task_terminal_id = task_manager->NewTask().InitContext(TaskTerminal, 0).Wakeup().ID();
 
