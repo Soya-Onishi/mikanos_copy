@@ -362,8 +362,12 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry& file_entry, char* command
     return err;
   }
 
+  __asm__("cli");
+  auto& task = task_manager->CurrentTask();
+  __asm__("sti");
+
   auto entry_addr = elf_header->e_entry;
-  CallApp(argc, argv, 4 << 3 | 3, 3 << 3 | 3, entry_addr, stack_frame_addr.value + 4096 - 8);
+  CallApp(argc, argv, 3 << 3 | 3, entry_addr, stack_frame_addr.value + 4096 - 8, &task.OSStackPointer());
 
   /*
   char s[64];

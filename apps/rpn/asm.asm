@@ -19,3 +19,10 @@ SyscallPutString:       ; void SyscallLogString(LogLevel, const char* s);
   mov r10, rcx
   syscall
   ret
+
+global SyscallExit
+SyscallExit:
+  mov eax, 0x80000002
+  mov r10, rcx
+  syscall
+  ret

@@ -90,6 +90,10 @@ std::optional<Message> Task::ReceiveMessage() {
   return m;
 }
 
+uint64_t& Task::OSStackPointer() {
+  return os_stack_ptr_;
+}
+
 TaskManager::TaskManager() {
   Task& task = NewTask()
     .SetLevel(current_level_)

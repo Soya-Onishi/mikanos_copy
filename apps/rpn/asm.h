@@ -4,5 +4,6 @@
 
 extern "C" {
   void halt();
-  void SyscallLogString(LogLevel, const char*); 
+  void SyscallLogString(LogLevel, const char*);
+  void SyscallExit(int code);
 }

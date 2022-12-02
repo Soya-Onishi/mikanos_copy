@@ -52,13 +52,22 @@ SYSCALL(PutString) {
   return {0, EBADF};
 }
 
+SYSCALL(Exit) {
+  __asm__("cli");
+  auto& task = task_manager->CurrentTask();
+  __asm__("sti");
+
+  return { task.OSStackPointer(), static_cast<int>(arg1) }; 
+}
+
 #undef SYSCALL
 
 using SyscallFuncType = Result (uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
 
-extern "C" std::array<SyscallFuncType*, 2> syscall_table{
+extern "C" std::array<SyscallFuncType*, 3> syscall_table{
   LogString,
   PutString,
+  Exit,
 };
 
 void InitializeSyscall() {

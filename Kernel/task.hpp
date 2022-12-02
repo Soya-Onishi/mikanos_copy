@@ -36,10 +36,12 @@ class Task {
     Task& Wakeup();
     void SendMessage(const Message& message);
     std::optional<Message> ReceiveMessage();
+    uint64_t& OSStackPointer();
 
   private:
     uint64_t id_;
     std::vector<uint64_t> stack_;
+    uint64_t os_stack_ptr_;
     alignas(16) TaskContext context_;
     std::deque<Message> messages_{};
     unsigned int level_{kDefaultLevel};

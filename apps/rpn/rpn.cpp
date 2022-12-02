@@ -17,7 +17,7 @@ void Push(long value) {
   stack[stack_idx] = value;
 }
 
-extern "C" int main(int argc, char** argv) {
+extern "C" void main(int argc, char** argv) {
   int error_count = 0;
 
   // main呼び出し前の段階のBSS領域などの初期化処理が実装されていないため
@@ -46,16 +46,17 @@ extern "C" int main(int argc, char** argv) {
     }
 
     if(stack_idx < 0 || stack_idx >= (sizeof(stack) / sizeof(stack[0]))) {
-      return 0;
+      printf("calculate stack is overflow.\n");
+      SyscallExit(1);
     }
   }
 
   if(error_count > 0) {
-    return error_count;
+    printf("there is errors");
+    SyscallExit(1);
   } else {
     long result = Pop();
     printf("result = %ld\n", result);
-    halt();
-    return 0;
+    SyscallExit(result);
   }
 }
