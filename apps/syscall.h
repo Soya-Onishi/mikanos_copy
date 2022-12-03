@@ -12,4 +12,5 @@ extern "C" {
   struct SyscallResult SyscallPutString(uint64_t, uint64_t, uint64_t);
   struct SyscallResult SyscallLogString(LogLevel, const char*);
   void SyscallExit(int code);
+  struct SyscallResult SyscallOpenWindow(int w, int h, int x, int y, const char* title);
 }

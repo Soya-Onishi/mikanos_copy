@@ -5,6 +5,7 @@
 #include "syscall.hpp"
 #include "task.hpp"
 #include "terminal.hpp"
+#include "layer.hpp"
 #include "asmfunc.h"
 #include "msr.hpp"
 #include "logger.hpp"
@@ -60,14 +61,32 @@ SYSCALL(Exit) {
   return { task.OSStackPointer(), static_cast<int>(arg1) }; 
 }
 
+SYSCALL(OpenWindow) {
+  const int w = arg1, h = arg2, x = arg3, y = arg4;
+  const auto title = reinterpret_cast<const char*>(arg5);
+  const auto win = std::make_shared<ToplevelWindow>(w, h, screen_config.pixel_format, title);
+
+  __asm__("cli");
+  const auto layer_id  = layer_manager->NewLayer()
+    .SetWindow(win)
+    .SetDraggable(true)
+    .Move({x, y})
+    .ID();
+  active_layer->Activate(layer_id);
+  __asm__("sti");
+
+  return { layer_id, 0 };
+}
+
 #undef SYSCALL
 
 using SyscallFuncType = Result (uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
 
-extern "C" std::array<SyscallFuncType*, 3> syscall_table{
+extern "C" std::array<SyscallFuncType*, 4> syscall_table{
   LogString,
   PutString,
   Exit,
+  OpenWindow,
 };
 
 void InitializeSyscall() {
