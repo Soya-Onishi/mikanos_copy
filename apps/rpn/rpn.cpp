@@ -1,7 +1,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
-#include "./asm.h"
+#include "../syscall.h"
 
 int stack_idx;
 long stack[128];
