@@ -28,3 +28,10 @@ SyscallOpenWindow:
   mov r10, rcx
   syscall
   ret
+
+global SyscallWinWriteString
+SyscallWinWriteString:
+  mov eax, 0x80000004
+  mov r10, rcx
+  syscall
+  ret

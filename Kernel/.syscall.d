@@ -58,4 +58,4 @@ syscall.o: syscall.cpp \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/ctype.h \
   /home/soya/Documents/Exercise/mikan_os/osbook/devenv/x86_64-elf/include/c++/v1/wctype.h \
   graphics.hpp frame_buffer_config.hpp frame_buffer.hpp fat.hpp \
-  layer.hpp asmfunc.h msr.hpp logger.hpp
+  layer.hpp font.hpp asmfunc.h msr.hpp logger.hpp

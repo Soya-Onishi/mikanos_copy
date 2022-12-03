@@ -13,4 +13,5 @@ extern "C" {
   struct SyscallResult SyscallLogString(LogLevel, const char*);
   void SyscallExit(int code);
   struct SyscallResult SyscallOpenWindow(int w, int h, int x, int y, const char* title);
+  struct SyscallResult SyscallWinWriteString(unsigned int layer_id, int x, int y, uint32_t color, const char* msg);
 }
